@@ -56,10 +56,4 @@ try:
 except Exception as e:  # noqa: BLE001
     check("AWS / Bedrock", False, f"{type(e).__name__}: {str(e)[:150]}")
 
-try:
-    import langfuse  # noqa: F401
-    check("Langfuse keys in .env", bool(os.getenv("LANGFUSE_PUBLIC_KEY")) and bool(os.getenv("LANGFUSE_SECRET_KEY")), "paste team keys into .env")
-except ImportError:
-    check("langfuse installed", False, "pip install -r requirements.txt")
-
 print("\nALL GREEN - you're ready!" if ok_all else "\nFix the [!!] lines, then run again. Stuck? Call the trainer.")

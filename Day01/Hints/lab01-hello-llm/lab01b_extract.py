@@ -1,9 +1,9 @@
-"""Lab C - Structured ticket extraction + your first Langfuse trace.
+"""Lab C - Structured ticket extraction.
 
 Run:   python Day01\\Labs\\lab01-hello-llm\\lab01b_extract.py
-Check: pytest Day01\\Labs\\lab01-hello-llm -k "challenge_4 or challenge_5 or challenge_6"
+Check: pytest Day01\\Labs\\lab01-hello-llm -k "challenge_4 or challenge_5"
 
-Complete TODO-4, TODO-5, TODO-6. Everything else is ready.
+Complete TODO-4, TODO-5. Everything else is ready.
 """
 import json
 import sys
@@ -14,7 +14,6 @@ from pydantic import BaseModel, Field
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))  # lets us import askit_core
 from askit_core import bedrock, config, data  # noqa: E402
-from askit_core.tracing import langfuse, observe  # noqa: E402,F401
 
 HERE = Path(__file__).parent
 RESULTS_FILE = HERE / "submission" / "lab01b_results.json"
@@ -89,18 +88,6 @@ def extract_ticket(client, model_id, text, temperature=0.0):
     raise ValueError("Model did not call the tool")
 
 
-# TODO-6: Trace every extraction in Langfuse.
-#   a) Add this decorator on the line directly above the function below:
-#          @observe(as_type="generation", name="extract_ticket")
-#   b) Inside the function, after `t = ...`, add:
-#          langfuse.update_current_generation(model=model_id, input=text, output=t.model_dump())
-@observe(as_type="generation", name="extract_ticket")
-def extract_ticket_traced(client, model_id, text):
-    t = extract_ticket(client, model_id, text)
-    langfuse.update_current_generation(model=model_id, input=text, output=t.model_dump())
-    return t
-
-
 def main():
     config.require_models()
     client = bedrock.client()
@@ -108,17 +95,14 @@ def main():
     rows = []
     for tk in tickets:
         text = f"Subject: {tk['subject']}\n{tk['description']}"
-        t = extract_ticket_traced(client, config.SMALL_MODEL, text)
+        t = extract_ticket(client, config.SMALL_MODEL, text)
         match = t.category == tk["category"] and t.priority == tk["priority"]
         print(f"{tk['ticket_id']}  {t.category:9} {t.priority:8} {t.sentiment:10} {'OK ' if match else 'DIFF'}  {t.summary}")
         rows.append({"ticket_id": tk["ticket_id"], "extracted": t.model_dump(),
                      "label": {"category": tk["category"], "priority": tk["priority"]}, "match": match})
-    langfuse.flush()
     RESULTS_FILE.parent.mkdir(exist_ok=True)
     RESULTS_FILE.write_text(json.dumps(rows, indent=2), encoding="utf-8")
     print(f"\nSaved {RESULTS_FILE.relative_to(HERE.parents[2])}")
-    print("Now open Langfuse -> Tracing -> click your latest 'extract_ticket' trace -> copy the URL")
-    print("and paste it into Day01\\Labs\\lab01-hello-llm\\submission\\trace_url.txt")
 
 
 if __name__ == "__main__":

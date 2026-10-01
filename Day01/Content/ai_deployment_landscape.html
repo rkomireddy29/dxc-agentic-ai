@@ -1,0 +1,656 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Deployment Landscape · Where do we run the model?</title>
+<style>
+:root{
+  --bg:#f6f7fb; --surface:#ffffff; --surface2:#eef1f7; --ink:#141a2a; --muted:#5a6478; --line:#dde2ec;
+  --accent:#0f7c8c; --accent-soft:#d8f0f3; --warn:#b45309; --warn-soft:#fdecd3;
+  --ok:#157f3b; --ok-soft:#dcf3e4; --bad:#b42318; --bad-soft:#fbe0dd; --adv:#6d3fc0; --adv-soft:#ece4fa;
+  --c1:#0f7c8c; --c2:#6d3fc0; --c3:#b45309; --c4:#157f3b;
+  --shadow:0 2px 10px rgba(20,26,42,.07);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1320; --surface:#171c2c; --surface2:#20263a; --ink:#e8ecf5; --muted:#9aa4ba; --line:#2c3450;
+  --accent:#3cc3d4; --accent-soft:#12343b; --warn:#f0a44b; --warn-soft:#3a2a14;
+  --ok:#4ccf7c; --ok-soft:#133523; --bad:#ff7a6b; --bad-soft:#3d1a17; --adv:#b494ff; --adv-soft:#2a2144;
+  --c1:#3cc3d4; --c2:#b494ff; --c3:#f0a44b; --c4:#4ccf7c; --shadow:none;}}
+:root[data-theme="dark"]{
+  --bg:#0f1320; --surface:#171c2c; --surface2:#20263a; --ink:#e8ecf5; --muted:#9aa4ba; --line:#2c3450;
+  --accent:#3cc3d4; --accent-soft:#12343b; --warn:#f0a44b; --warn-soft:#3a2a14;
+  --ok:#4ccf7c; --ok-soft:#133523; --bad:#ff7a6b; --bad-soft:#3d1a17; --adv:#b494ff; --adv-soft:#2a2144;
+  --c1:#3cc3d4; --c2:#b494ff; --c3:#f0a44b; --c4:#4ccf7c; --shadow:none;}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:"Aptos Narrow","Aptos","Segoe UI",system-ui,-apple-system,sans-serif;font-size:18px;line-height:1.45}
+button{font:inherit;color:inherit;cursor:pointer}
+header{position:sticky;top:0;z-index:10;background:var(--surface);border-bottom:1px solid var(--line)}
+.bar{max-width:1240px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.brand{font-weight:700}
+.brand small{display:block;font-weight:400;color:var(--muted);font-size:14px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;flex:1;justify-content:center}
+.tab{border:1px solid var(--line);background:var(--surface2);border-radius:999px;padding:5px 13px;font-size:16px;white-space:nowrap}
+.tab.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.back{border:1px solid var(--line);background:var(--surface2);border-radius:8px;padding:5px 12px;font-size:15px;text-decoration:none;color:var(--ink)}
+main{max-width:1240px;margin:0 auto;padding:22px 16px 80px}
+section{display:none;animation:fade .25s ease}
+section.on{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1}}
+h1{font-size:40px;line-height:1.1;margin:.1em 0 .25em}
+h2{font-size:30px;margin:.1em 0 .3em}
+h3{font-size:22px;margin:1.2em 0 .5em}
+.kicker{color:var(--accent);font-weight:700;text-transform:uppercase;letter-spacing:1px;font-size:15px}
+.lead{font-size:21px;color:var(--muted);max-width:900px;margin:.2em 0 .8em}
+.muted{color:var(--muted)}
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+.g4{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:var(--shadow)}
+.btn{background:var(--accent);color:#fff;border:0;border-radius:10px;padding:9px 18px;font-weight:700}
+.btn.ghost{background:var(--surface2);color:var(--ink);border:1px solid var(--line)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:12px 0}
+.pill{display:inline-block;border-radius:999px;padding:2px 11px;font-size:15px;font-weight:700;border:1px solid currentColor}
+.tag{font-size:15px;background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:2px 10px;margin:2px 4px 2px 0;display:inline-block}
+.path{font-family:Consolas,"Cascadia Mono",monospace;font-size:16px;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:2px 8px}
+
+/* path cards (landscape) */
+.pc{border:2px solid var(--line);border-top:8px solid var(--c);border-radius:16px;background:var(--surface);padding:18px;text-align:left;box-shadow:var(--shadow);transition:transform .15s}
+.pc:hover{transform:translateY(-3px)}
+.pc.sel{border-color:var(--c);background:var(--surface2)}
+.pc .ic{font-size:38px;line-height:1}
+.pc h3{margin:.3em 0 .1em;font-size:24px}
+.pc .who{font-size:16px;color:var(--muted)}
+.meter{display:flex;gap:4px;align-items:center;font-size:15px;margin-top:8px}
+.meter i{width:22px;height:9px;border-radius:3px;background:var(--line)}
+.meter i.f{background:var(--c)}
+.meter span{width:78px;color:var(--muted)}
+
+/* ADR panel */
+.adr{margin-top:16px;border:2px solid var(--c);border-radius:16px;background:var(--surface);overflow:hidden}
+.adr .hd{background:var(--c);color:#fff;padding:12px 18px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-weight:700}
+.adr .bd{padding:16px 18px}
+.pc2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.pros,.cons{border-radius:12px;padding:12px 16px}
+.pros{background:var(--ok-soft)} .cons{background:var(--bad-soft)}
+.pros h4{color:var(--ok)} .cons h4{color:var(--bad)}
+h4{margin:0 0 6px;font-size:19px}
+.pros ul,.cons ul{margin:0;padding-left:1.2em}
+.pros li,.cons li{margin:4px 0}
+.when{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+.when div{background:var(--surface2);border-radius:12px;padding:10px 16px}
+.when b{display:block;font-size:14px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)}
+.conseq{margin-top:14px;background:var(--warn-soft);border-radius:12px;padding:10px 16px}
+.conseq b{color:var(--warn)}
+@media(max-width:800px){.pc2,.when{grid-template-columns:1fr}}
+
+/* consumption */
+.vs{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.vs .side{border-radius:16px;padding:18px;border:2px solid var(--line);background:var(--surface)}
+.vs .side.a{border-top:8px solid var(--c1)} .vs .side.b{border-top:8px solid var(--c3)}
+.vs .big{font-size:26px;font-weight:800}
+.vs ul{margin:8px 0;padding-left:1.2em} .vs li{margin:4px 0}
+.plus{color:var(--ok);font-weight:700} .minus{color:var(--bad);font-weight:700}
+table.t{border-collapse:collapse;width:100%;font-size:17px;margin-top:8px}
+table.t th,table.t td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+table.t th{background:var(--surface2)}
+@media(max-width:800px){.vs{grid-template-columns:1fr}}
+
+/* calc */
+.calc{display:grid;grid-template-columns:minmax(300px,420px) 1fr;gap:18px;align-items:start}
+.sl{display:grid;grid-template-columns:150px 1fr 90px;gap:8px;align-items:center;margin:8px 0;font-size:17px}
+.sl input[type=range]{width:100%}
+.sl output{font-weight:700;text-align:right}
+.presets{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 10px}
+.presets button{border:1px solid var(--line);background:var(--surface2);border-radius:8px;padding:4px 10px;font-size:15px}
+.presets button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.bars2{display:grid;gap:10px;margin-top:6px}
+.b2{display:grid;grid-template-columns:130px 1fr 110px;gap:10px;align-items:center}
+.b2 .tr{background:var(--surface2);border-radius:8px;height:34px;overflow:hidden}
+.b2 .fl{height:100%;transition:width .3s}
+.b2 b{text-align:right}
+.verdict{margin-top:12px;padding:12px 16px;border-radius:12px;font-weight:700;font-size:19px}
+.verdict.pay{background:var(--accent-soft);color:var(--accent)}
+.verdict.gpu{background:var(--warn-soft);color:var(--warn)}
+svg text{fill:var(--muted);font-size:13px;font-family:inherit}
+.note{font-size:15px;color:var(--muted);margin-top:8px}
+@media(max-width:900px){.calc{grid-template-columns:1fr}.sl{grid-template-columns:120px 1fr 80px}.b2{grid-template-columns:90px 1fr 90px}}
+
+/* wizard */
+.wq{margin:10px 0}
+.wq b{display:block;margin-bottom:6px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chp{border:2px solid var(--line);background:var(--surface);border-radius:10px;padding:7px 14px}
+.chp.on{border-color:var(--accent);background:var(--accent-soft)}
+.rec{margin-top:14px;border:2px solid var(--accent);border-radius:16px;background:var(--surface);padding:16px 20px}
+.rec .big{font-size:26px;font-weight:800;color:var(--accent)}
+
+/* heatmap */
+.hm{display:grid;gap:4px;font-size:16px}
+.hm .h{font-weight:700;text-align:center;padding:6px 4px;font-size:15px}
+.hm .r{display:flex;flex-direction:column;justify-content:center;padding:4px 8px;font-weight:700}
+.hm .r input{width:100%}
+.hm .c{border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;min-height:38px}
+.s1{background:#f6cfcb;color:#7a1a12}.s2{background:#fbe3c8;color:#7a4208}.s3{background:#fbf2c6;color:#6b5a06}.s4{background:#d3efc9;color:#1d5e22}.s5{background:#b3e3bd;color:#0f4a1f}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .s1{background:#5b2420;color:#ffd5cf}:root:not([data-theme="light"]) .s2{background:#5a3a14;color:#ffe2bf}:root:not([data-theme="light"]) .s3{background:#524a14;color:#fff3b8}:root:not([data-theme="light"]) .s4{background:#1f4a22;color:#d6f5cc}:root:not([data-theme="light"]) .s5{background:#17573a;color:#c4f2d2}}
+:root[data-theme="dark"] .s1{background:#5b2420;color:#ffd5cf}:root[data-theme="dark"] .s2{background:#5a3a14;color:#ffe2bf}:root[data-theme="dark"] .s3{background:#524a14;color:#fff3b8}:root[data-theme="dark"] .s4{background:#1f4a22;color:#d6f5cc}:root[data-theme="dark"] .s5{background:#17573a;color:#c4f2d2}
+.rank{display:grid;gap:8px;margin-top:14px}
+.rk{display:grid;grid-template-columns:230px 1fr 60px;gap:10px;align-items:center}
+.rk .tr{background:var(--surface2);border-radius:8px;height:30px;overflow:hidden}
+.rk .fl{height:100%;transition:width .3s}
+@media(max-width:800px){.rk{grid-template-columns:130px 1fr 50px}}
+
+/* flip */
+.flip{perspective:1000px;min-height:180px;border:0;background:none;padding:0;text-align:left;width:100%}
+.flip .in{position:relative;width:100%;height:100%;min-height:180px;transition:transform .5s;transform-style:preserve-3d}
+.flip.flipped .in{transform:rotateY(180deg)}
+.flip .face{position:absolute;inset:0;backface-visibility:hidden;border-radius:14px;padding:16px;border:1px solid var(--line);display:flex;flex-direction:column;justify-content:center}
+.flip .front{background:var(--surface);box-shadow:var(--shadow)}
+.flip .front .e{font-size:34px;line-height:1}
+.flip .front b{font-size:22px;margin-top:6px}
+.flip .front .hint{font-size:14px;color:var(--muted);margin-top:6px}
+.flip .back{background:var(--accent-soft);transform:rotateY(180deg);font-size:17px}
+
+/* quiz scenarios */
+.sc{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin:12px 0}
+.sc .qt{font-weight:700;font-size:20px;margin-bottom:10px}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}
+.opt{text-align:left;border:1px solid var(--line);background:var(--surface2);border-radius:10px;padding:9px 14px}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt.right{background:var(--ok-soft);border-color:var(--ok)}
+.opt.wrong{background:var(--bad-soft);border-color:var(--bad)}
+.opt:disabled{cursor:default}
+.why{display:none;margin-top:10px;padding:10px 14px;border-radius:10px;background:var(--surface2);font-size:17px}
+.why.show{display:block}
+.score{font-size:44px;font-weight:800;color:var(--accent)}
+
+/* decks */
+.anat{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.anat div{background:var(--surface);border:1px solid var(--line);border-left:6px solid var(--accent);border-radius:10px;padding:10px 14px}
+.anat b{display:block;color:var(--accent)}
+.lab{border:2px dashed var(--accent);background:var(--accent-soft);border-radius:16px;padding:22px}
+.lab h2{margin-top:0}
+.wwho{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0 16px}
+.wwho div{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 14px;font-size:17px;line-height:1.4}
+.wwho b{display:block;color:var(--accent);font-size:14px;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px}
+@media(max-width:800px){.wwho{grid-template-columns:1fr}}
+.lab ol{margin:.4em 0 0;padding-left:1.3em} .lab li{margin:5px 0}
+.openpath{margin-top:14px;font-weight:700}
+.nextbar{display:flex;justify-content:space-between;margin-top:26px}
+.hidden{display:none!important}
+@media (max-width:700px){body{font-size:16px}h1{font-size:30px}h2{font-size:24px}.brand small{display:none}.tabs{order:3;flex:1 1 100%;flex-wrap:nowrap;overflow-x:auto;justify-content:flex-start;padding-bottom:4px}.tab{flex:none}}
+</style>
+</head>
+<body>
+<header><div class="bar">
+  <div class="brand">AI Deployment Landscape<small>Day 1 · Models · companion page</small></div>
+  <nav class="tabs" id="tabs"></nav>
+  <a class="back" href="index.html">&larr; Back to Day 1</a>
+</div></header>
+
+<main>
+
+<!-- 1 MAP -->
+<section data-title="① The map">
+  <div class="kicker">Where does the model run?</div>
+  <h1>Three paths. Two ways to pay.</h1>
+  <p class="lead">Every AI deployment is one choice of <b>path</b> + one choice of <b>how you pay</b>. Click a path to see it as an ADR.</p>
+
+  <div class="grid g3" id="paths"></div>
+
+  <h3>Then, inside every path: how do you pay?</h3>
+  <div class="vs">
+    <div class="side a"><div class="big">🧾 Pay-as-you-go</div><div class="muted">Per token / per request. Nothing to switch off.</div></div>
+    <div class="side b"><div class="big">🖥️ Reserve a GPU</div><div class="muted">Pay per hour (or buy it). Busy or idle, the meter runs.</div></div>
+  </div>
+  <p class="note">Path 3 has a twist: LangChain / CrewAI clouds run your <i>agent logic</i>, not the model. They still call a model from somewhere — so you choose <b>both</b> layers.</p>
+
+  <div id="adr-paths"></div>
+  <div class="nextbar"><span></span><button class="btn" data-go="1">Next: Pay-as-you-go vs GPU &rarr;</button></div>
+</section>
+
+<!-- 2 PAY MODEL -->
+<section data-title="② How you pay">
+  <div class="kicker">Consumption model · ADR view</div>
+  <h2>Pay-as-you-go vs reserved GPU</h2>
+  <div class="vs">
+    <div class="side a">
+      <div class="big">🧾 Pay-as-you-go</div>
+      <div class="muted">e.g. Bedrock on-demand · Azure pay-as-you-go · Vertex pay-as-you-go</div>
+      <ul>
+        <li><span class="plus">+</span> Start in minutes, zero idle cost</li>
+        <li><span class="plus">+</span> Scales for you; latest frontier models</li>
+        <li><span class="plus">+</span> Cost = usage → easy to chargeback</li>
+        <li><span class="minus">−</span> Cost grows linearly with traffic</li>
+        <li><span class="minus">−</span> Rate limits / throttling at peak</li>
+        <li><span class="minus">−</span> Latency and model versions not in your hands</li>
+      </ul>
+      <b>Best when:</b> pilots, spiky or unknown traffic, small teams.
+    </div>
+    <div class="side b">
+      <div class="big">🖥️ Reserved GPU / provisioned</div>
+      <div class="muted">e.g. GPU VM + vLLM · Bedrock Provisioned Throughput · Azure PTU · on-prem GPUs</div>
+      <ul>
+        <li><span class="plus">+</span> Flat, predictable bill</li>
+        <li><span class="plus">+</span> Cheaper per token <b>if kept busy</b></li>
+        <li><span class="plus">+</span> Guaranteed capacity, steady latency</li>
+        <li><span class="minus">−</span> Idle GPU = money burning</li>
+        <li><span class="minus">−</span> You size, patch, monitor (self-host)</li>
+        <li><span class="minus">−</span> Commitment (1–6 months) on provisioned plans</li>
+      </ul>
+      <b>Best when:</b> steady, high, predictable volume; strict latency or residency.
+    </div>
+  </div>
+
+  <h3>Same idea, different names</h3>
+  <table class="t">
+    <tr><th>Path</th><th>Pay-as-you-go looks like</th><th>Reserved looks like</th></tr>
+    <tr><td><b>Public cloud</b></td><td>Bedrock on-demand · Azure OpenAI/Foundry standard · Vertex AI per-token</td><td>Bedrock Provisioned Throughput · Azure PTU · Vertex provisioned throughput · or your own GPU VM</td></tr>
+    <tr><td><b>Private / on-prem</b></td><td>Rare — internal chargeback per call</td><td>Always reserved: you own or lease GPUs (OpenShift AI, VMware Private AI)</td></tr>
+    <tr><td><b>OSS / 3rd party</b></td><td>Per-trace / per-run / per-token plans (LangSmith, CrewAI cloud, Together, Groq, Hugging Face serverless)</td><td>Dedicated endpoints or seats; or self-host the open-source version</td></tr>
+  </table>
+  <div class="nextbar"><button class="btn ghost" data-go="-1">&larr; Map</button><button class="btn" data-go="1">Next: Costing &rarr;</button></div>
+</section>
+
+<!-- 3 COST -->
+<section data-title="③ Costing">
+  <div class="kicker">Break-even calculator</div>
+  <h2>When does a GPU beat pay-as-you-go?</h2>
+  <p class="lead">Drag the sliders. The GPU bill auto-adds the GPUs you <b>need</b>, a spare and ops time. Prices are <b>illustrative ballparks</b> — confirm on the live pricing page.</p>
+  <div class="calc">
+    <div class="card">
+      <b>Model price (per 1M tokens)</b>
+      <div class="presets" id="presets"></div>
+      <div class="sl"><label>Requests / day</label><input type="range" id="rq" min="500" max="500000" step="500" value="20000"><output id="rqo"></output></div>
+      <div class="sl"><label>Input tokens</label><input type="range" id="tin" min="100" max="8000" step="100" value="1500"><output id="tino"></output></div>
+      <div class="sl"><label>Output tokens</label><input type="range" id="tout" min="50" max="2000" step="50" value="300"><output id="touto"></output></div>
+      <div class="sl"><label>Price in $/1M</label><input type="range" id="pin" min="0.05" max="20" step="0.05" value="3"><output id="pino"></output></div>
+      <div class="sl"><label>Price out $/1M</label><input type="range" id="pout" min="0.1" max="80" step="0.1" value="15"><output id="pouto"></output></div>
+      <hr style="border:0;border-top:1px solid var(--line)">
+      <b>Your own GPU</b>
+      <div class="presets" id="gpupre"></div>
+      <div class="sl"><label>GPU $/hour</label><input type="range" id="gph" min="0.5" max="60" step="0.5" value="7"><output id="gpho"></output></div>
+      <div class="sl"><label>Ops people $/mo</label><input type="range" id="ops" min="0" max="20000" step="500" value="4000"><output id="opso"></output></div>
+      <div class="sl"><label>Spare GPU</label><label style="grid-column:2/4"><input type="checkbox" id="spare" checked> +1 GPU for failover</label></div>
+      <div class="sl"><label>Capacity / GPU</label><input type="range" id="cap" min="5000" max="200000" step="5000" value="60000"><output id="capo"></output></div>
+      <div class="note">Capacity = requests/day one GPU can serve (assumption — depends on model size & vLLM tuning). GPUs needed = traffic ÷ capacity (rounded up). GPUs run 24×7, 30 days. Ops = share of an engineer who owns them.</div>
+    </div>
+    <div>
+      <div class="card">
+        <b>Monthly bill</b>
+        <div class="bars2">
+          <div class="b2"><span>🧾 Pay-as-you-go</span><div class="tr"><div class="fl" id="fl1" style="background:var(--c1)"></div></div><b id="v1"></b></div>
+          <div class="b2"><span>🖥️ Reserved GPU</span><div class="tr"><div class="fl" id="fl2" style="background:var(--c3)"></div></div><b id="v2"></b></div>
+        </div>
+        <div class="verdict" id="verdict"></div>
+        <div class="stats" style="display:flex;gap:12px;flex-wrap:wrap;margin-top:12px">
+          <div class="tag">Cost / 1,000 requests (PAYG): <b id="c1k"></b></div>
+          <div class="tag">GPUs needed: <b id="gneed"></b></div>
+          <div class="tag">GPU utilisation: <b id="util"></b></div>
+          <div class="tag">PAYG = this GPU bill at: <b id="be"></b></div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:14px">
+        <b>Cost vs traffic</b> <span class="muted">(where the lines cross = break-even)</span>
+        <svg id="chart" viewBox="0 0 560 260" width="100%" role="img" aria-label="Monthly cost versus requests per day for pay-as-you-go and reserved GPU"></svg>
+        <div class="note">GPU line is a staircase: each time traffic outgrows the GPUs, another one (plus its spare) is added. It still ignores idle nights, peaks (9–11 am can be 3× normal) and model upgrades.</div>
+      </div>
+    </div>
+  </div>
+  <h3>So when DO you go for a GPU?</h3>
+  <div class="vs">
+    <div class="side b">
+      <div class="big">🖥️ Go for GPU when several of these are true</div>
+      <ul>
+        <li><b>Steady, high volume</b> — GPUs stay busy (50%+) most of the day, every day</li>
+        <li><b>Data can't leave</b> — regulator or client demands your own infrastructure</li>
+        <li><b>Guaranteed speed</b> — no throttling allowed (voice, call-centre, real-time)</li>
+        <li><b>Custom open model</b> — fine-tuned, quantised, or air-gapped</li>
+        <li><b>Someone owns it</b> — GPU ops skills and on-call exist</li>
+      </ul>
+    </div>
+    <div class="side a">
+      <div class="big">🧾 Stay pay-as-you-go when</div>
+      <ul>
+        <li><b>Pilot or unknown demand</b> — you can't predict the load yet</li>
+        <li><b>Spiky traffic</b> — busy 9–11 am, idle at night (idle GPU still bills)</li>
+        <li><b>Frontier quality needed</b> — not available as open weights</li>
+        <li><b>Small team</b> — no MLOps, no on-call</li>
+        <li><b>Short deadline</b> — weeks, not months</li>
+      </ul>
+    </div>
+  </div>
+  <div class="card" style="margin-top:14px"><b>The usual answer is a path, not a switch:</b> start pay-as-you-go &rarr; measure 1–2 months of real traffic &rarr; move only the <b>steady, high-volume</b> workload to provisioned capacity or GPUs &rarr; keep the spiky and hard tasks on the API.<br><span class="muted">Hidden costs the bill hides: idle hours, the spare GPU, people time, patching, and re-testing every time a better model arrives.</span></div>
+  <div class="nextbar"><button class="btn ghost" data-go="-1">&larr; How you pay</button><button class="btn" data-go="1">Next: Model choice &rarr;</button></div>
+</section>
+
+<!-- 4 MODEL CHOICE -->
+<section data-title="④ Model choice">
+  <div class="kicker">Public vs open-source models</div>
+  <h2>Pick the model — answer 5 questions</h2>
+  <div class="grid g2">
+    <div class="card" id="wiz"></div>
+    <div>
+      <div class="rec" id="rec"></div>
+    </div>
+  </div>
+
+  <h3>Proprietary vs open-weight — the ADR in one screen</h3>
+  <div class="vs">
+    <div class="side a">
+      <div class="big">🔒 Proprietary (API)</div>
+      <div class="muted">Claude · GPT · Gemini · Amazon Nova</div>
+      <ul>
+        <li><span class="plus">+</span> Top quality, tool-use, long context</li>
+        <li><span class="plus">+</span> No GPUs to run; vendor patches & scales</li>
+        <li><span class="minus">−</span> Data goes to the provider's cloud (region-pinned)</li>
+        <li><span class="minus">−</span> Price & versions set by vendor; deprecations</li>
+        <li><span class="minus">−</span> No weights → no deep customisation</li>
+      </ul>
+    </div>
+    <div class="side b">
+      <div class="big">🔓 Open-weight</div>
+      <div class="muted">Llama · Mistral · Qwen · DeepSeek · Gemma</div>
+      <ul>
+        <li><span class="plus">+</span> Run anywhere — even air-gapped</li>
+        <li><span class="plus">+</span> Fine-tune, quantise, full control of cost curve</li>
+        <li><span class="plus">+</span> Also available per-token on Bedrock / Vertex / Foundry</li>
+        <li><span class="minus">−</span> If self-hosted: GPUs + MLOps + security are yours</li>
+        <li><span class="minus">−</span> Check licence terms (commercial use, size limits)</li>
+        <li><span class="minus">−</span> Frontier gap on hard reasoning / agents (shrinking)</li>
+      </ul>
+    </div>
+  </div>
+  <p class="note">"Open-weight" ≠ "open-source": you get the model files, not always the training data or an OSI licence. Good enough for ADRs — but read the licence.</p>
+
+  <h3>Size ladder — start small, move up only if tests fail</h3>
+  <div class="grid g4" id="ladder"></div>
+  <div class="nextbar"><button class="btn ghost" data-go="-1">&larr; Costing</button><button class="btn" data-go="1">Next: Trade-offs &rarr;</button></div>
+</section>
+
+<!-- 5 TRADE-OFFS -->
+<section data-title="⑤ Trade-offs">
+  <div class="kicker">Architecture trade-offs</div>
+  <h2>What matters to <i>you</i>? Move the weights.</h2>
+  <p class="lead">Slider under each row = how much it matters to you (0–5). Scores are 1 (poor) – 5 (great). The winner changes with your priorities — that is exactly what an ADR records.</p>
+  <div class="hm" id="hm"></div>
+  <div class="rank" id="rank"></div>
+  <p class="note">Scores are the trainer's starting point for discussion — argue with them in your ADR.</p>
+  <div class="nextbar"><button class="btn ghost" data-go="-1">&larr; Model choice</button><button class="btn" data-go="1">Next: Key ideas &rarr;</button></div>
+</section>
+
+<!-- 6 CONCEPTS -->
+<section data-title="⑥ Key ideas">
+  <div class="kicker">Just enough jargon</div>
+  <h2>Eight words you will hear in every deployment meeting</h2>
+  <p class="lead">Click to flip. No deep dive today — only what you need to read a quote or an architecture diagram.</p>
+  <div class="grid g4" id="cards"></div>
+  <div class="card" style="margin-top:16px">
+    <b>Rule of thumb for GPU memory:</b> model size in billions × 2 ≈ GB needed at full precision (16-bit).
+    <div class="row" style="margin:8px 0 0">
+      <label>Model size (B params): <input type="range" id="msz" min="1" max="120" value="8" style="vertical-align:middle"></label>
+      <output id="mszo" style="font-weight:700"></output>
+    </div>
+    <div class="bars2" id="memb"></div>
+    <div class="note">Plus extra for the KV cache (grows with users × context length). Roughly: 24 GB card ≈ up to ~10B model · 80 GB card ≈ up to ~35B · 70B model ≈ 2 big GPUs.</div>
+  </div>
+  <div class="nextbar"><button class="btn ghost" data-go="-1">&larr; Trade-offs</button><button class="btn" data-go="1">Next: Data residency &rarr;</button></div>
+</section>
+
+<!-- 7 RESIDENCY -->
+<section data-title="⑦ Data & residency">
+  <div class="kicker">Ask these before you pick a region</div>
+  <h2>Where does the data go?</h2>
+  <div class="grid g3" id="res"></div>
+  <div class="card" style="margin-top:16px">
+    <b>Residency ladder — how much control do you really need?</b>
+    <div class="grid g4" style="margin-top:10px">
+      <div class="card"><b>1 · Region-pinned API</b><br>Calls stay in one cloud region. Simplest.</div>
+      <div class="card"><b>2 · + private network</b><br>PrivateLink / VNet endpoints, no public internet.</div>
+      <div class="card"><b>3 · Dedicated / self-hosted in your cloud tenant</b><br>Your VM, your keys, your logs.</div>
+      <div class="card"><b>4 · On-prem / air-gapped</b><br>Nothing leaves the building. Highest effort.</div>
+    </div>
+  </div>
+  <p class="note">Not legal advice — your security & compliance team signs off. Typical drivers: GDPR (EU), India's DPDP Act, sector rules (e.g. RBI for banks), client contracts.</p>
+  <div class="nextbar"><button class="btn ghost" data-go="-1">&larr; Key ideas</button><button class="btn" data-go="1">Next: Scenario game &rarr;</button></div>
+</section>
+
+<!-- 8 GAME -->
+<section data-title="⑧ Scenario game">
+  <div class="kicker">Intermediate · Pick the path</div>
+  <h2>Five clients. Which path?</h2>
+  <div id="game"></div>
+  <div class="card"><b>Score:</b> <span class="score" id="gs">0 / 5</span> <span class="muted" id="gb"></span></div>
+  <div class="nextbar"><button class="btn ghost" data-go="-1">&larr; Data residency</button><button class="btn" data-go="1">Next: ADR exercise &rarr;</button></div>
+</section>
+
+<!-- 9 ADR -->
+<section data-title="⑨ ADR exercise">
+  <div class="kicker">Write it down</div>
+  <h2>An ADR is a decision, with its reasons</h2>
+  <p class="lead">One page. Future-you (and the review board) must see <i>why</i>, not only <i>what</i>.</p>
+  <div class="anat">
+    <div><b>1 · Title & status</b>ADR-001 · Proposed / Accepted</div>
+    <div><b>2 · Context</b>Problem, constraints, numbers</div>
+    <div><b>3 · Decision drivers</b>Cost, residency, latency, skills…</div>
+    <div><b>4 · Options</b>≥ 3, with pros / cons</div>
+    <div><b>5 · Decision</b>"We will use … because …"</div>
+    <div><b>6 · Consequences</b>What gets easier, what gets harder, risks</div>
+  </div>
+  <h3>What the Architecture Review Board will ask</h3>
+  <div class="grid g3">
+    <div class="card">💰 "What does it cost at 10× traffic?"</div>
+    <div class="card">🌍 "Where does the customer data physically sit?"</div>
+    <div class="card">🔁 "How do you change your mind in 6 months?"</div>
+  </div>
+
+  <div class="lab" style="margin-top:22px">
+    <div class="kicker">🧪 ADR Exercise 1 · 10 min + 10 min</div>
+    <h2>Model & deployment decision for a real client</h2>
+    <div class="wwho">
+      <div><b>What we do</b>Read a client case, choose a deployment path, pay model and model, and write ADR v1. Then the client changes something — you update to ADR v2.</div>
+      <div><b>Why</b>Real architects decide with incomplete facts and then adapt. The ADR is how that is recorded and defended.</div>
+      <div><b>Outcome / learning</b>Two pushed ADR versions in your fork, and the confidence to defend a model/cost/residency choice in front of a review board.</div>
+      <div><b>How</b>Open the exercise README, copy the ADR template, fill it, push. The trainer gives the next instruction when 10 minutes are up.</div>
+    </div>
+    <ol>
+      <li>Open: <span class="path">C:\AskIT\dxc-agentic-ai\Day01\Labs\adr1-model-selection\README.md</span></li>
+      <li>Read the case (3 min), decide and write <b>ADR v1</b> (7 min).</li>
+      <li>Push v1 (commands are in the README). Wait for the trainer's update.</li>
+      <li>Create <b>ADR v2</b>, push again. Be ready to present to the board.</li>
+    </ol>
+  </div>
+</section>
+
+</main>
+
+<script>
+/* ---------- tabs ---------- */
+const secs=[...document.querySelectorAll("section")];
+let cur=0;
+const tabsEl=document.getElementById("tabs");
+secs.forEach((s,i)=>{const b=document.createElement("button");b.className="tab";b.textContent=s.dataset.title;b.onclick=()=>show(i);tabsEl.appendChild(b)});
+function show(i){cur=Math.max(0,Math.min(secs.length-1,i));secs.forEach((s,k)=>s.classList.toggle("on",k===cur));
+ [...tabsEl.children].forEach((t,k)=>t.classList.toggle("on",k===cur));window.scrollTo({top:0});
+ if(cur===2)calc();if(cur===4)hm();if(cur===5)mem()}
+document.addEventListener("click",e=>{const g=e.target.closest("[data-go]");if(g)show(cur+parseInt(g.dataset.go))});
+show(0);
+
+/* ---------- data: paths ---------- */
+const P=[
+ {k:"pub",ic:"☁️",n:"Public cloud",c:"var(--c1)",who:"AWS Bedrock · Azure AI Foundry / OpenAI · Google Vertex AI",
+  m:{speed:5,ctrl:2,ops:1},
+  ctx:"Provider hosts the models; you call an API inside your cloud account and region.",
+  pros:["Fastest start — hours, not months","Widest model choice, incl. frontier models","No GPUs to buy, patch or capacity-plan","Enterprise security, IAM, audit already there","Fits other cloud services (storage, search, logging)"],
+  cons:["Per-token bill grows with every user","Throttling / quota limits at peak","Region & model availability set by provider","Strict residency needs extra design (private endpoints, in-region only)","Some lock-in to provider APIs & guardrail tools"],
+  when:"Speed matters, traffic uncertain, data allowed in a public-cloud region.",avoid:"Data must never leave your premises or sovereign boundary.",
+  conseq:"Faster delivery; opex that scales with usage; must manage cost with caching, smaller models, quotas."},
+ {k:"priv",ic:"🏢",n:"Private cloud / on-prem",c:"var(--c2)",who:"Red Hat OpenShift AI · VMware Private AI / Tanzu · bare-metal GPU",
+  m:{speed:1,ctrl:5,ops:5},
+  ctx:"You run open-weight models on GPUs inside your own data centre or private cloud.",
+  pros:["Maximum data control — nothing leaves","Meets strict regulator / sovereign needs","Cost per token can be lowest at high steady load","Reuse existing platform (Kubernetes, VMware) and security tooling","No external rate limits"],
+  cons:["Long lead time: GPU procurement, racks, power","High upfront capex + skilled MLOps team","Open-weight models only — frontier gap","You patch, scale, monitor, secure everything","Idle GPUs are sunk cost; capacity is fixed"],
+  when:"Regulated data, existing private platform, steady high volume.",avoid:"Pilot, unknown demand, small team, tight deadline.",
+  conseq:"Strong compliance story; slower first release; hiring/training for GPU ops; refresh cycle every few years."},
+ {k:"oss",ic:"🧩",n:"Open-source & 3rd-party platforms",c:"var(--c3)",who:"LangChain / LangSmith cloud · CrewAI cloud · Hugging Face · Together · Groq · self-hosted vLLM / Ollama",
+  m:{speed:4,ctrl:3,ops:3},
+  ctx:"You use open frameworks or a vendor's managed platform for agents and/or model hosting — on top of a model from somewhere.",
+  pros:["Agent tooling out of the box (tracing, deploy, evals)","Portable open-source frameworks, large community","Cheap fast hosting of open models (3rd-party inference)","Good for prototypes and small teams"],
+  cons:["Another vendor in your data path → extra security review","Startup risk: pricing, roadmap and support can change","You still need a model host (Path 1 or 2)","Compliance proof (SOC 2, residency) varies by vendor","Integration glue is yours"],
+  when:"Quick agent prototypes, small teams, using open frameworks.",avoid:"Sensitive data with no vendor approval; need single-throat-to-choke SLA.",
+  conseq:"Faster agent delivery; extra vendor to govern; keep framework code portable so you can swap hosting."}
+];
+const pe=document.getElementById("paths");
+P.forEach((p,i)=>{const b=document.createElement("button");b.className="pc";b.style.setProperty("--c",p.c);
+ const meter=(l,v)=>`<div class="meter"><span>${l}</span>${[1,2,3,4,5].map(x=>`<i class="${x<=v?"f":""}"></i>`).join("")}</div>`;
+ b.innerHTML=`<div class="ic">${p.ic}</div><h3>${p.n}</h3><div class="who">${p.who}</div>${meter("Speed",p.m.speed)}${meter("Control",p.m.ctrl)}${meter("Ops effort",p.m.ops)}<div class="note">Click → ADR view</div>`;
+ b.onclick=()=>pick(i);pe.appendChild(b)});
+function pick(i){const p=P[i];[...pe.children].forEach((c,k)=>c.classList.toggle("sel",k===i));
+ document.getElementById("adr-paths").innerHTML=`<div class="adr" style="--c:${p.c}"><div class="hd"><span>ADR option · ${p.ic} ${p.n}</span><span>Status: Considered</span></div><div class="bd">
+ <p><b>Context:</b> ${p.ctx}</p>
+ <div class="pc2"><div class="pros"><h4>✅ Pros</h4><ul>${p.pros.map(x=>`<li>${x}</li>`).join("")}</ul></div><div class="cons"><h4>⚠️ Cons</h4><ul>${p.cons.map(x=>`<li>${x}</li>`).join("")}</ul></div></div>
+ <div class="when"><div><b>Choose when</b>${p.when}</div><div><b>Avoid when</b>${p.avoid}</div></div>
+ <div class="conseq"><b>Consequences:</b> ${p.conseq}</div></div></div>`}
+pick(0);
+
+/* ---------- calculator ---------- */
+const $=id=>document.getElementById(id);
+const PRE=[["Small & fast",0.1,0.4],["Mid-tier",3,15],["Premium",10,50],["Open model via API",0.7,0.7]];
+const GPRE=[["24 GB card · ~$1.5/h",1.5,1,25000],["80 GB card · ~$7/h",7,2,60000],["8×80 GB node · ~$55/h",55,1,300000]];
+const pr=$("presets"),gp=$("gpupre");
+PRE.forEach((x,i)=>{const b=document.createElement("button");b.textContent=x[0];b.onclick=()=>{$("pin").value=x[1];$("pout").value=x[2];[...pr.children].forEach((c,k)=>c.classList.toggle("on",k===i));calc()};pr.appendChild(b)});
+pr.children[1].classList.add("on");
+GPRE.forEach((x,i)=>{const b=document.createElement("button");b.textContent=x[0];b.onclick=()=>{$("gph").value=x[1];$("cap").value=Math.min(200000,x[3]);[...gp.children].forEach((c,k)=>c.classList.toggle("on",k===i));calc()};gp.appendChild(b)});
+gp.children[1].classList.add("on");
+const fmt=n=>n>=1e6?"$"+(n/1e6).toFixed(2)+"M":n>=1000?"$"+Math.round(n).toLocaleString("en-US"):"$"+n.toFixed(0);
+function calc(){
+ const rq=+$("rq").value,tin=+$("tin").value,tout=+$("tout").value,pin=+$("pin").value,pout=+$("pout").value,gph=+$("gph").value,cap=+$("cap").value,ops=+$("ops").value,spare=$("spare").checked?1:0;
+ $("rqo").textContent=rq.toLocaleString("en-US");$("tino").textContent=tin;$("touto").textContent=tout;$("pino").textContent="$"+pin;$("pouto").textContent="$"+pout;$("gpho").textContent="$"+gph;$("opso").textContent="$"+ops.toLocaleString("en-US");$("capo").textContent=cap.toLocaleString("en-US");
+ const perReq=(tin*pin+tout*pout)/1e6;
+ const need=Math.max(1,Math.ceil(rq/cap)),gn=need+spare;
+ const payg=rq*30*perReq, gpu=gn*gph*24*30+ops;
+ const mx=Math.max(payg,gpu,1);
+ $("fl1").style.width=(payg/mx*100)+"%";$("fl2").style.width=(gpu/mx*100)+"%";
+ $("v1").textContent=fmt(payg);$("v2").textContent=fmt(gpu);
+ const util=rq/(need*cap);
+ $("util").textContent=Math.round(util*100)+"%";
+ $("gneed").textContent=need+(spare?" + 1 spare":"");
+ $("c1k").textContent="$"+(perReq*1000).toFixed(2);
+ $("be").textContent=Math.round(gpu/(30*perReq)).toLocaleString("en-US")+" req/day";
+ const v=$("verdict");
+ if(gpu<payg&&util>=0.5){v.className="verdict gpu";v.textContent="🖥️ GPU wins by "+fmt(payg-gpu)+"/month — and it is busy enough ("+Math.round(util*100)+"%) to justify it.";}
+ else if(gpu<payg){v.className="verdict gpu";v.textContent="⚠️ GPU is cheaper on paper by "+fmt(payg-gpu)+", but only "+Math.round(util*100)+"% busy — a traffic dip flips it. Prove steady load first.";}
+ else{v.className="verdict pay";v.textContent="🧾 Pay-as-you-go is cheaper by "+fmt(gpu-payg)+"/month at this volume.";}
+ draw(perReq,gph,cap,rq,spare,ops);
+}
+function draw(perReq,gph,cap,cur,spare,ops){
+ const W=560,H=260,L=56,B=34,T=14,R=10,max=Math.max(cur*2.2,20000);
+ const steps=40,pts=[],gp=[];let ym=0;
+ for(let i=0;i<=steps;i++){const x=max*i/steps;const pa=x*30*perReq;const g=(Math.max(1,Math.ceil(x/cap))+spare)*gph*24*30+ops;pts.push([x,pa]);gp.push([x,g]);ym=Math.max(ym,pa,g)}
+ ym=ym*1.08;
+ const X=x=>L+(W-L-R)*x/max,Y=y=>H-B-(H-B-T)*y/ym;
+ const path=a=>a.map((p,i)=>(i?"L":"M")+X(p[0]).toFixed(1)+" "+Y(p[1]).toFixed(1)).join(" ");
+ let s=`<line x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}" stroke="var(--line)"/><line x1="${L}" y1="${T}" x2="${L}" y2="${H-B}" stroke="var(--line)"/>`;
+ for(let i=0;i<=4;i++){const yv=ym*i/4;s+=`<text x="${L-6}" y="${Y(yv)+4}" text-anchor="end">${fmt(yv)}</text><line x1="${L}" x2="${W-R}" y1="${Y(yv)}" y2="${Y(yv)}" stroke="var(--line)" stroke-dasharray="3 4"/>`}
+ for(let i=0;i<=4;i++){const xv=max*i/4;s+=`<text x="${X(xv)}" y="${H-12}" text-anchor="middle">${Math.round(xv/1000)}k</text>`}
+ s+=`<text x="${(L+W)/2}" y="${H-1}" text-anchor="middle">requests / day</text>`;
+ s+=`<path d="${path(pts)}" fill="none" stroke="var(--c1)" stroke-width="3"/><path d="${path(gp)}" fill="none" stroke="var(--c3)" stroke-width="3"/>`;
+ s+=`<line x1="${X(cur)}" x2="${X(cur)}" y1="${T}" y2="${H-B}" stroke="var(--adv)" stroke-width="2" stroke-dasharray="5 4"/><text x="${X(cur)+4}" y="${T+12}" style="fill:var(--adv);font-weight:700">you are here</text>`;
+ s+=`<text x="${W-R-4}" y="${T+12}" text-anchor="end" style="fill:var(--c1);font-weight:700">● pay-as-you-go</text><text x="${W-R-4}" y="${T+28}" text-anchor="end" style="fill:var(--c3);font-weight:700">● reserved GPU</text>`;
+ $("chart").innerHTML=s}
+["rq","tin","tout","pin","pout","gph","ops","spare","cap"].forEach(i=>$(i).addEventListener("input",()=>{[...pr.children].forEach(c=>c.classList.remove("on"));[...gp.children].forEach(c=>c.classList.remove("on"));calc()}));
+calc();
+
+/* ---------- model wizard ---------- */
+const WQ=[
+ ["Can prompts & data leave your premises (to a public-cloud region)?",["Yes, region-pinned is fine","Only inside our own cloud tenant","No — nothing leaves"]],
+ ["How hard is the task?",["Simple: classify / extract / FAQ","Medium: RAG answers, summaries","Hard: multi-step agents, complex reasoning"]],
+ ["How much traffic?",["Small or unknown (pilot)","Medium and growing","High and steady, 24×7"]],
+ ["How soon must it be live?",["< 1 month","1–3 months","6+ months is OK"]],
+ ["Do you have GPU / MLOps skills?",["No","A little","Yes, a team"]]
+];
+const wa=[0,1,0,0,0];
+const wz=$("wiz");
+WQ.forEach((q,qi)=>{const d=document.createElement("div");d.className="wq";d.innerHTML=`<b>${qi+1}. ${q[0]}</b><div class="chips">`+q[1].map((o,oi)=>`<button class="chp ${oi===wa[qi]?"on":""}" data-q="${qi}" data-o="${oi}">${o}</button>`).join("")+"</div>";wz.appendChild(d)});
+wz.addEventListener("click",e=>{const b=e.target.closest(".chp");if(!b)return;const q=+b.dataset.q;wa[q]=+b.dataset.o;[...b.parentNode.children].forEach(c=>c.classList.toggle("on",c===b));rec()});
+function rec(){
+ const [data,hard,vol,time,skill]=wa;let t,path,model,why=[];
+ if(data===2){path="Private / on-prem";model="Open-weight model (Llama / Mistral / Qwen class) on your own GPUs via vLLM";why.push("Data must not leave → only self-hosting qualifies.");
+   if(skill===0||time===0)why.push("⚠️ But you lack GPU skills / time — raise this as a risk, or negotiate an in-country cloud region.");
+   if(hard===2)why.push("Hard reasoning: pick the largest open model you can afford and test hard — the gap to frontier is real.")}
+ else if(data===1){path="Public cloud — dedicated / in your tenant";model=hard===2?"Frontier model via private endpoint, or large open model on dedicated GPUs":"Mid-size open model on dedicated GPUs, or a provider model through private endpoints";why.push("Data stays in your tenant: use private networking and in-region deployment.");if(vol===2)why.push("High steady load → provisioned throughput or own GPUs will beat per-token.")}
+ else{
+   if(vol===2&&skill===2&&hard<2){path="Public cloud API now, plan GPUs later";model="Small/mid model via API; benchmark an open model on reserved GPUs for the steady load";why.push("High steady traffic + skills → self-hosting may win on cost. Prove it with the calculator.")}
+   else{path="Public cloud — pay-as-you-go API";model=hard===2?"Frontier model (e.g. Claude Sonnet/Opus class) — consider a small model for easy steps":hard===1?"Mid-tier model (Sonnet / Haiku / Nova Lite class)":"Small & fast model (Haiku / Nova Micro class)";why.push("Fastest, cheapest to start; revisit when traffic is steady.")}
+ }
+ if(time===0&&data<2)why.push("Short deadline → managed API wins; self-host later.");
+ why.push("Start with the smallest model that passes your test set; move up only if it fails.");
+ $("rec").innerHTML=`<div class="kicker">Recommendation (starting point, not an answer key)</div><div class="big">${path}</div><p><b>Model:</b> ${model}</p><ul>${why.map(w=>`<li>${w}</li>`).join("")}</ul>`}
+rec();
+const LAD=[["🐜","Tiny / small","1–8B open · Nova Micro · Haiku","Classify, extract, route. Cheapest, fastest."],["🐕","Medium","~30–70B open · Nova Lite/Pro · Sonnet-class","RAG answers, summaries, most agents."],["🐘","Frontier","Opus-class · GPT/Gemini top tier","Hard reasoning, long planning, tricky code."],["🧮","Embedding / rerank","Titan · Cohere · open embedders","Search & RAG. Tiny cost, big impact."]];
+$("ladder").innerHTML=LAD.map(l=>`<div class="card"><div style="font-size:32px">${l[0]}</div><b>${l[1]}</b><div class="muted">${l[2]}</div><div style="margin-top:6px">${l[3]}</div></div>`).join("");
+
+/* ---------- heatmap ---------- */
+const OPT=["Public API (pay-as-you-go)","Public cloud dedicated / provisioned","Private / on-prem","OSS / 3rd-party platform"];
+const OC=["var(--c1)","var(--c4)","var(--c2)","var(--c3)"];
+const CR=[["Time to market",[5,3,1,4],3],["Cost at low volume",[5,1,1,4],3],["Cost at high steady volume",[2,4,4,3],3],["Data control & residency",[3,4,5,2],3],["Model quality & choice",[5,3,3,4],3],["Low ops effort",[5,2,1,4],3],["Elastic scaling",[5,3,1,4],3],["Low lock-in",[2,3,4,3],3]];
+function hm(){
+ const g=$("hm");g.style.gridTemplateColumns="230px repeat(4,1fr)";
+ let h=`<div></div>`+OPT.map(o=>`<div class="h">${o}</div>`).join("");
+ CR.forEach((c,i)=>{h+=`<div class="r">${c[0]}<input type="range" min="0" max="5" value="${c[2]}" data-w="${i}" title="importance"></div>`+c[1].map(v=>`<div class="c s${v}">${v}</div>`).join("")});
+ g.innerHTML=h;
+ g.querySelectorAll("input").forEach(r=>r.oninput=()=>{CR[+r.dataset.w][2]=+r.value;rankit()});rankit()}
+function rankit(){
+ const tw=CR.reduce((a,c)=>a+c[2],0)||1;
+ const sc=OPT.map((o,j)=>CR.reduce((a,c)=>a+c[1][j]*c[2],0)/tw);
+ const order=sc.map((s,j)=>[s,j]).sort((a,b)=>b[0]-a[0]);
+ $("rank").innerHTML="<b>Weighted score</b>"+order.map(([s,j])=>`<div class="rk"><span>${OPT[j]}</span><div class="tr"><div class="fl" style="width:${s/5*100}%;background:${OC[j]}"></div></div><b>${s.toFixed(1)}</b></div>`).join("")}
+
+/* ---------- concept cards ---------- */
+const CC=[["🔤","Token","~¾ of a word. You pay per token in and out; output costs more than input."],
+["📏","Context window","How much text the model can read at once (prompt + history + documents). Bigger = costlier."],
+["⚙️","vLLM","Open-source server that runs open models fast on a GPU by serving many users at once. The usual engine for self-hosting."],
+["🧠","KV cache","The model's short-term memory of the conversation so far. Saves recompute, but eats GPU memory — more users or longer chats = more GPUs."],
+["🗜️","Quantisation","Shrink a model (e.g. 16-bit → 4-bit) to fit a smaller GPU. Slight quality loss, big cost saving."],
+["⏱️","Latency vs throughput","Latency = how fast one user gets an answer. Throughput = how many users per second. GPUs trade one for the other."],
+["📦","Provisioned throughput","Reserve model capacity by the hour/month from the cloud provider. Steady speed, steady bill."],
+["🧊","Caching & batch","Cache repeated prompts and run non-urgent jobs in batch — both cut API bills sharply. Ask what your provider offers."]];
+$("cards").innerHTML=CC.map(c=>`<button class="flip"><div class="in"><div class="face front"><div class="e">${c[0]}</div><b>${c[1]}</b><span class="hint">Click to flip</span></div><div class="face back"><div>${c[2]}</div></div></div></button>`).join("");
+$("cards").addEventListener("click",e=>{const f=e.target.closest(".flip");if(f)f.classList.toggle("flipped")});
+function mem(){
+ const b=+$("msz").value;$("mszo").textContent=b+"B params";
+ const rows=[["16-bit",b*2],["8-bit",b],["4-bit",b/2]];const mx=Math.max(b*2,1);
+ $("memb").innerHTML=rows.map((r,i)=>`<div class="b2"><span>${r[0]}</span><div class="tr"><div class="fl" style="width:${r[1]/mx*100}%;background:${["var(--c3)","var(--c2)","var(--c4)"][i]}"></div></div><b>${Math.round(r[1])} GB</b></div>`).join("")}
+$("msz").oninput=mem;
+
+/* ---------- residency ---------- */
+const RS=[["📍","Where is it processed?","Region-pinned or cross-region routing? Some services route to other regions for capacity — choose in-geography options."],
+["📚","Is it used to train models?","Enterprise APIs generally say no by default — get it in the contract, not just the web page."],
+["🗄️","What is logged & for how long?","Prompts, outputs, abuse-monitoring copies, your own traces (Langfuse etc.). Logs are data too."],
+["🔌","Private connectivity","PrivateLink / VNet / private endpoints keep calls off the public internet."],
+["🔑","Who holds the keys?","Provider-managed vs your own encryption keys (BYOK / KMS)."],
+["⚖️","Which law applies?","GDPR, India DPDP Act, sector regulators, client contracts. Ask security & legal early."]];
+$("res").innerHTML=RS.map(r=>`<div class="card"><div style="font-size:30px">${r[0]}</div><b>${r[1]}</b><div class="muted">${r[2]}</div></div>`).join("");
+
+/* ---------- game ---------- */
+const GM=[
+ {q:"Marketing team wants a copy-writing assistant for 500 staff. No customer data. Launch in 3 weeks.",a:0,w:"Pilot, no sensitive data, tight deadline → pay-as-you-go public API. No GPUs, no ops."},
+ {q:"A bank must keep customer PII in India on its own OpenShift cluster. Load is heavy and steady, 24×7.",a:2,w:"Hard residency + existing platform + steady load → private / on-prem with open-weight models. Accept the ops effort."},
+ {q:"Summarise 2 million archived documents once a week. Nobody waits for the answer.",a:0,w:"Offline, delay-tolerant → API batch mode (about half price) beats paying for idle GPUs between runs."},
+ {q:"Two developers prototyping a multi-agent workflow. They want tracing and one-click deploy, no ops.",a:3,w:"Managed agent platform (LangChain / CrewAI cloud) removes plumbing — but run the sensitive-data review before real data."},
+ {q:"Health-tech SaaS: fine-tuned open model, 10 M requests/day, region-locked, strong cloud engineering team.",a:1,w:"High steady volume + fine-tuned open model + cloud skills → dedicated GPUs in your cloud tenant (or provisioned throughput). Cheaper per token at this scale."}
+];
+const AN=["Public API (pay-as-you-go)","Public cloud dedicated GPU / provisioned","Private / on-prem","OSS / 3rd-party platform"];
+let gdone=0,gright=0;
+$("game").innerHTML=GM.map((g,i)=>`<div class="sc" data-i="${i}"><div class="qt">${i+1}. ${g.q}</div><div class="opts">${AN.map((a,j)=>`<button class="opt" data-j="${j}">${String.fromCharCode(65+j)} · ${a}</button>`).join("")}</div><div class="why"></div></div>`).join("");
+$("game").addEventListener("click",e=>{const b=e.target.closest(".opt");if(!b)return;const sc=b.closest(".sc"),g=GM[+sc.dataset.i],j=+b.dataset.j;
+ sc.querySelectorAll(".opt").forEach(o=>{o.disabled=true;if(+o.dataset.j===g.a)o.classList.add("right")});
+ if(j!==g.a)b.classList.add("wrong");else gright++;gdone++;
+ const w=sc.querySelector(".why");w.textContent=(j===g.a?"✅ ":"❌ ")+g.w;w.classList.add("show");
+ $("gs").textContent=gright+" / "+GM.length;
+ if(gdone===GM.length)$("gb").textContent=gright>=5?"🥇 Deployment Architect":gright>=3?"🥈 Solid instincts":"🥉 Re-run the trade-off tab"});
+</script>
+</body>
+</html>

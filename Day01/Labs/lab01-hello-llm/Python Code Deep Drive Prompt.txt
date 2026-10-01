@@ -1,0 +1,14 @@
+Suggested prompt for understanding the code before you execute:-
+1) Ensure you run from folder where python file is located
+2) Run below prompt in code pilot
+
+----------------------------------------------------------------------------
+Refer to code <CODE NAME>
+Explain this code to me as a fresher before I run it.
+
+1. First give a 4–5 line functional summary: what real-world problem it solves and what it produces.
+2. Then explain the execution flow in numbered steps, from main() until the output file is saved.
+3. Explain each custom import, function and important variable in simple language.
+4. Clearly mark the TODO sections: what I must write there and why.
+5. Do not modify the code. Keep the explanation concise and use simple examples from an functional perspective
+----------------------------------------------------------------------------

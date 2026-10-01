@@ -83,13 +83,3 @@ def test_challenge_5_structured_extraction():
     assert isinstance(t, b.Ticket) and t.category == "Access"
     tc = fc.calls[0].get("toolConfig", {})
     assert tc.get("toolChoice", {}).get("tool", {}).get("name") == b.TOOL_NAME, "TODO-5: force the tool with toolChoice"
-
-
-def test_challenge_6_tracing():
-    src = (LAB / "lab01b_extract.py").read_text(encoding="utf-8")
-    assert re.search(r"^@observe\(.*\)\s*\ndef extract_ticket_traced", src, re.M), \
-        "TODO-6a: put @observe(...) directly above def extract_ticket_traced"
-    assert re.search(r"^\s+langfuse\.update_current_generation\(", src, re.M), "TODO-6b: add update_current_generation"
-    url_file = LAB / "submission" / "trace_url.txt"
-    assert url_file.exists() and "langfuse" in url_file.read_text(encoding="utf-8").lower(), \
-        "Paste your Langfuse trace URL into submission\\trace_url.txt"

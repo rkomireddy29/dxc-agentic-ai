@@ -177,7 +177,7 @@ footer .bar{justify-content:space-between}
     <button class="flip"><div class="in"><div class="face front"><span class="big-emoji">🧾</span><b>Structured output</b><span class="hint">Click to flip</span></div>
       <div class="face back"><div>Force a tool call with <b>toolChoice</b> → the model fills your schema → <b>Pydantic</b> validates it.</div></div></div></button>
     <button class="flip"><div class="in"><div class="face front"><span class="big-emoji">🔍</span><b>Tracing</b><span class="hint">Click to flip</span></div>
-      <div class="face back"><div>Every call visible in Langfuse: prompt, answer, tokens, latency. We'll lean on it more every day.</div></div></div></button>
+      <div class="face back"><div>A recording of every call: prompt, answer, tokens, latency. We switch it on in a later session.</div></div></div></button>
   </div>
 
   <h3>Today's flow</h3>
@@ -236,13 +236,15 @@ footer .bar{justify-content:space-between}
     <h2>Titan embeddings & similarity</h2>
     <div class="wwho"><div><b>What we do</b>Convert text into embeddings with Titan and measure similarity to find the best KB article for a ticket.</div><div><b>Why</b>Embeddings let search match meaning, not just keywords. This is the foundation of RAG.</div><div><b>Outcome / learning</b>You understand what an embedding is, how cosine similarity ranks results, and where it gets fooled.</div><div><b>How</b>Call Titan v2 (TODO-1) &rarr; write cosine similarity (TODO-2) &rarr; return top-k (TODO-3) &rarr; run it and study the misses.</div></div>
     <ol>
-      <li>Open <span class="path">Day02\Labs\lab02-naive-rag\lab02a_embeddings.py</span></li>
-      <li><b>Challenge 1 (TODO-1):</b> call Titan Text Embeddings v2 through Bedrock <span class="tag">AWS</span></li>
-      <li><b>Challenge 2 (TODO-2):</b> write cosine similarity</li>
-      <li><b>Challenge 3 (TODO-3):</b> return the top-k most similar items, then <b>run the script</b></li>
-      <li><b>Look:</b> do the similarity scores match your intuition? Which ticket got the wrong KB article?</li>
-      <li><b>Stretch:</b> change dimensions to 256 and 1,024 — do the rankings change?</li>
+      <li><b>Get ready:</b> Command Prompt &rarr; <span class="path">cd /d C:\AskIT\dxc-agentic-ai</span> &rarr; <span class="path">.venv\Scripts\activate</span> &rarr; <span class="path">cd Day02\Labs\lab02-naive-rag</span>. You must see <b>(.venv)</b> at the start of the line.</li>
+      <li><b>Open the file:</b> <span class="path">notepad lab02a_embeddings.py</span> (or VS Code). Search for <b>TODO</b>.</li>
+      <li><b>Fill 3 TODOs</b> (hints are in the file): <b>TODO-1</b> call Titan v2 through Bedrock <span class="tag">AWS</span> &middot; <b>TODO-2</b> cosine similarity &middot; <b>TODO-3</b> top-k most similar.</li>
+      <li><b>Run:</b> <span class="path">python lab02a_embeddings.py</span></li>
+      <li><b>Look:</b> do the scores match your intuition? Which ticket got the wrong KB article?</li>
+      <li><b>Check:</b> <span class="path">pytest -k "challenge_1 or challenge_2 or challenge_3"</span></li>
+      <li><span class="tag">stretch</span> Change dimensions to 256 and 1,024 &mdash; do the rankings change?</li>
     </ol>
+    <div class="card"><b>Stuck?</b> No <b>(.venv)</b> &rarr; run the activate line again &middot; <b>AccessDenied</b> on Titan &rarr; tell the trainer &middot; <b>IndentationError</b> &rarr; every line inside a function starts with the same 4 spaces &middot; Still stuck after 10 min &rarr; open <span class="path">Day02\Hints\lab02-naive-rag</span>.</div>
     <div class="openpath">📂 Open in VS Code: <span class="path">C:\AskIT\dxc-agentic-ai\Day02\Labs\lab02-naive-rag\README.md</span></div>
     <div class="row"><button class="btn ghost" data-done="labA">✅ I finished Lab A (+20 XP)</button></div>
   </div>
@@ -300,13 +302,15 @@ footer .bar{justify-content:space-between}
     <h2>Build your own vector index</h2>
     <div class="wwho"><div><b>What we do</b>Split the 20 KB articles into chunks, embed them and build a searchable index.</div><div><b>Why</b>The model can't read the whole KB for every question. Retrieval quality, starting with chunking, decides answer quality.</div><div><b>Outcome / learning</b>Your own working vector index and a measured hit rate @3 that you can improve.</div><div><b>How</b>Chunk with overlap (TODO-4) &rarr; embed every chunk (TODO-5) &rarr; search (TODO-6) &rarr; run it and study the misses.</div></div>
     <ol>
-      <li>Open <span class="path">Day02\Labs\lab02-naive-rag\lab02b_index.py</span></li>
-      <li><b>Challenge 4 (TODO-4):</b> split text into overlapping chunks</li>
-      <li><b>Challenge 5 (TODO-5):</b> build the index — every chunk gets an id, doc_id, text and vector <span class="tag">AWS</span></li>
-      <li><b>Challenge 6 (TODO-6):</b> search the index, then <b>run the script</b> → your <b>hit rate @3</b></li>
+      <li><b>Same window</b> as Lab A, with <b>(.venv)</b> showing, in <span class="path">Day02\Labs\lab02-naive-rag</span>.</li>
+      <li><b>Open the file:</b> <span class="path">notepad lab02b_index.py</span>. Search for <b>TODO</b>.</li>
+      <li><b>Fill 3 TODOs:</b> <b>TODO-4</b> split text into overlapping chunks &middot; <b>TODO-5</b> build the index (id, doc_id, text, vector) <span class="tag">AWS</span> &middot; <b>TODO-6</b> search the index.</li>
+      <li><b>Run:</b> <span class="path">python lab02b_index.py</span> &rarr; you get your <b>hit rate @3</b>.</li>
       <li><b>Look:</b> which questions MISS? Why do you think so?</li>
-      <li><b>Stretch:</b> try chunk sizes 40, 80 and 200 words — which gives the best hit rate?</li>
+      <li><b>Check:</b> <span class="path">pytest -k "challenge_4 or challenge_5 or challenge_6"</span></li>
+      <li><span class="tag">stretch</span> Try chunk sizes 40, 80 and 200 words &mdash; which gives the best hit rate?</li>
     </ol>
+    <div class="card"><b>Stuck?</b> Still stuck after 10 min &rarr; open <span class="path">Day02\Hints\lab02-naive-rag</span> and copy ONE TODO only.</div>
     <div class="openpath">📂 Open in VS Code: <span class="path">C:\AskIT\dxc-agentic-ai\Day02\Labs\lab02-naive-rag\README.md</span></div>
     <div class="row"><button class="btn ghost" data-done="labB">✅ I finished Lab B (+20 XP)</button></div>
   </div>
@@ -379,12 +383,14 @@ footer .bar{justify-content:space-between}
     <h2>AskIT answers with sources</h2>
     <div class="wwho"><div><b>What we do</b>Build AskIT's first RAG loop: retrieve KB chunks, answer from them, cite the sources, and say IDK when unsure.</div><div><b>Why</b>Grounding cuts hallucination and makes answers auditable &mdash; essential in an enterprise.</div><div><b>Outcome / learning</b>An AskIT that cites its sources and refuses to guess, and you see the difference with vs without RAG.</div><div><b>How</b>Write the grounded prompt (TODO-7) &rarr; wire retrieve &rarr; prompt &rarr; model (TODO-8) &rarr; run with and without RAG, then pytest.</div></div>
     <ol>
-      <li>Open <span class="path">Day02\Labs\lab02-naive-rag\lab02c_rag.py</span> (uses a ready-made index, so it works even if Lab B isn't done)</li>
-      <li><b>Challenge 7 (TODO-7):</b> write the grounded prompt — context with ids, rules, question</li>
-      <li><b>Challenge 8 (TODO-8):</b> retrieve → build prompt → ask the model</li>
-      <li><b>Challenge 9:</b> <b>run the script</b> — compare answers <b>without</b> vs <b>with</b> RAG. The test checks AskIT cites sources and admits when it doesn't know.</li>
-      <li><b>Stretch:</b> try k=1 and k=6 — what breaks? What does it cost?</li>
+      <li><b>Same window</b>, with <b>(.venv)</b> showing. Lab C uses a ready-made index, so it works even if Lab B is not finished.</li>
+      <li><b>Open the file:</b> <span class="path">notepad lab02c_rag.py</span>. Search for <b>TODO</b>.</li>
+      <li><b>Fill 2 TODOs:</b> <b>TODO-7</b> write the grounded prompt (context with ids, rules, question) &middot; <b>TODO-8</b> retrieve &rarr; build prompt &rarr; ask the model.</li>
+      <li><b>Run:</b> <span class="path">python lab02c_rag.py</span> &mdash; compare the answer <b>without</b> and <b>with</b> RAG. AskIT must cite sources and say it doesn&rsquo;t know when unsure.</li>
+      <li><b>Check:</b> <span class="path">pytest -k "challenge_7 or challenge_8 or challenge_9"</span></li>
+      <li><span class="tag">stretch</span> Try k=1 and k=6 &mdash; what breaks? What does it cost?</li>
     </ol>
+    <div class="card"><b>Stuck?</b> Still stuck after 10 min &rarr; open <span class="path">Day02\Hints\lab02-naive-rag</span> and copy ONE TODO only.</div>
     <div class="openpath">📂 Open in VS Code: <span class="path">C:\AskIT\dxc-agentic-ai\Day02\Labs\lab02-naive-rag\README.md</span></div>
     <div class="row"><button class="btn ghost" data-done="labC">✅ I finished Lab C (+20 XP)</button></div>
   </div>

@@ -198,7 +198,7 @@ footer .bar{justify-content:space-between}
     <div class="ag lab"><b>10:40</b><span>🧪 Lab B — First Bedrock call, compare models</span></div>
     <div class="ag"><b>11:20</b><span>Break</span></div>
     <div class="ag"><b>11:30</b><span>③ LLM Mechanics for Builders</span></div>
-    <div class="ag lab"><b>11:50</b><span>🧪 Lab C — Structured extraction + tracing</span></div>
+    <div class="ag lab"><b>11:50</b><span>🧪 Lab C — Structured extraction</span></div>
     <div class="ag"><b>12:30</b><span>🏆 Boss Quiz · Team roles · What's next</span></div>
   </div>
 </section>
@@ -290,6 +290,14 @@ footer .bar{justify-content:space-between}
       <div class="face back"><div>Embedding and reranking models — rerank improves search precision. Session 3.</div></div></div></button>
     <button class="flip"><div class="in"><div class="face front"><b>Outside Bedrock</b><span class="hint">Click to flip</span></div>
       <div class="face back"><div>Voice (e.g. realtime speech models), video generation, some moderation models — awareness only in this course.</div></div></div></button>
+  </div>
+
+  <div class="card" style="margin-top:18px;border:2px solid var(--accent);background:var(--accent-soft)">
+    <div class="row" style="justify-content:space-between;margin:0">
+      <div><b style="font-size:22px">🧭 Going deeper: the AI deployment landscape</b><br>
+        <span class="muted">Public cloud · private / on-prem · open-source &amp; 3rd-party &nbsp;|&nbsp; pay-as-you-go vs reserved GPU &nbsp;|&nbsp; cost calculator &amp; ADR trade-offs</span></div>
+      <a class="btn" href="ai_deployment_landscape.html" target="_blank" rel="noopener" style="text-decoration:none;display:inline-block">Open the landscape page &rarr;</a>
+    </div>
   </div>
 
   <h3>Game · Pick the right model <span class="chip i">INTERMEDIATE</span></h3>
@@ -415,7 +423,7 @@ footer .bar{justify-content:space-between}
     <button class="flip"><div class="in"><div class="face front"><b>Why not just parse the text?</b><span class="hint">Click to flip</span></div>
       <div class="face back"><div>Free text breaks your code. Define a <b>schema</b> (Pydantic), ask the model to fill it, then <b>validate</b>. Invalid → retry or reject.</div></div></div></button>
     <button class="flip"><div class="in"><div class="face front"><b>What is a trace?</b><span class="hint">Click to flip</span></div>
-      <div class="face back"><div>A recording of every call: prompt, response, tokens, latency, cost. In Langfuse you'll <b>see</b> what AskIT did — your #1 debugging tool.</div></div></div></button>
+      <div class="face back"><div>A recording of every call: prompt, response, tokens, latency, cost. It lets you <b>see</b> what AskIT did — a tool we switch on in a later session.</div></div></div></button>
   </div>
 
   <h3>Quick check</h3>
@@ -426,18 +434,18 @@ footer .bar{justify-content:space-between}
 <section data-title="Lab C" data-lab="1">
   <div class="lab">
     <div class="kicker">🧪 Lab C · 40 min</div>
-    <h2>Structured ticket extraction + your first trace</h2>
-    <div class="wwho"><div><b>What we do</b>Turn messy ticket text into clean, validated fields (category, priority, user, summary, sentiment) and trace every call in Langfuse.</div><div><b>Why</b>Agents need data, not prose. Structured output plus validation makes results reliable, and tracing shows what the model actually did.</div><div><b>Outcome / learning</b>Reliable structured output from an LLM, and your first trace to debug from.</div><div><b>How</b>Define the Ticket schema (TODO-4) &rarr; force the model to answer through a tool call and validate it (TODO-5) &rarr; add Langfuse tracing (TODO-6).</div></div>
+    <h2>Structured ticket extraction</h2>
+    <div class="wwho"><div><b>What we do</b>Turn messy ticket text into clean, validated fields (category, priority, user, summary, sentiment) and check the result against the human label.</div><div><b>Why</b>Agents need data, not prose. Structured output plus validation makes results reliable.</div><div><b>Outcome / learning</b>Reliable structured output from an LLM, and a feel for where it agrees or disagrees with a human.</div><div><b>How</b>Define the Ticket schema (TODO-4) &rarr; force the model to answer through a tool call and validate it (TODO-5) &rarr; run it on 5 real tickets.</div></div>
     <ol>
       <li><b>Same folder, same (.venv).</b> Open <span class="path">lab01b_extract.py</span> and search for <b>TODO-4</b>.</li>
       <li><b>TODO-4:</b> finish the <b>Ticket</b> schema (5 fields with rules).</li>
       <li><b>TODO-5:</b> make the model answer through a tool call, then validate it against the schema.</li>
-      <li><b>Langfuse keys:</b> the trainer shares your team keys. Open <span class="path">notepad .env</span>, fill <b>LANGFUSE_PUBLIC_KEY</b>, <b>LANGFUSE_SECRET_KEY</b>, <b>LANGFUSE_HOST</b>, save. Check: <span class="path">python tools\verify_env.py</span> &rarr; Langfuse [OK].</li>
-      <li><b>TODO-6:</b> add Langfuse tracing, run <span class="path">python lab01b_extract.py</span>. Then open Langfuse &rarr; <b>Tracing</b> &rarr; click your latest <b>extract_ticket</b> trace &rarr; copy its URL into <span class="path">submission\trace_url.txt</span>.</li>
-      <li><b>Check:</b> <span class="path">pytest</span> &rarr; all 6 pass.</li>
+      <li><b>Run:</b> <span class="path">python lab01b_extract.py</span>. You should see 5 tickets, each marked <b>OK</b> or <b>DIFF</b> (DIFF = the model disagrees with the human label &mdash; who is right?).</li>
+      <li><b>Check:</b> <span class="path">pytest</span> &rarr; all 5 pass.</li>
+      <li><b>Ignore</b> the <b>TODO-6</b> note in the file and the &ldquo;Langfuse&rdquo; message at the end of the run &mdash; that is for a later session.</li>
       <li><span class="tag">stretch</span> Same ticket 5&times; at temperature 0 vs 1 &mdash; how many fields change?</li>
     </ol>
-    <div class="card"><b>Stuck?</b> No trace in Langfuse &rarr; wait 30 s, check the keys in <span class="path">.env</span> &middot; Throttling &rarr; wait 30 s and re-run.</div>
+    <div class="card"><b>Stuck?</b> <b>ValidationError</b> &rarr; check the allowed values in your schema &middot; Throttling &rarr; wait 30 s and re-run.</div>
     <div class="openpath">📂 Open in VS Code: <span class="path">C:\AskIT\dxc-agentic-ai\Day01\Labs\lab01-hello-llm\README.md</span></div>
     <div class="row"><button class="btn ghost" data-done="labC">✅ I finished Lab C (+20 XP)</button></div>
   </div>
@@ -602,7 +610,7 @@ const Q={
   {l:"i",q:"You increase temperature from 0.2 to 1.5. What happens?",o:["Answers get shorter","Output becomes more varied and less predictable","Costs drop","The context window grows"],a:1,w:"Higher temperature flattens the probability distribution."},
   {l:"i",q:"Why validate LLM output with a schema (e.g. Pydantic)?",o:["It makes the model faster","It catches missing/invalid fields before your code breaks","It reduces tokens","It's required by Bedrock"],a:1,w:"Treat model output like any untrusted input — validate it."},
   {l:"i",q:"Doubling the chat history sent on every call mainly affects…",o:["Only the output quality","Input cost and latency on every call","Nothing — history is free","The model's training data"],a:1,w:"History is re-sent as input tokens each call — cost and latency grow."},
-  {l:"i",q:"What does a trace in Langfuse let you see?",o:["Only the final answer","Prompts, responses, tokens, latency and cost per step","The model's weights","Your AWS bill"],a:1,w:"Traces make every step visible — essential for debugging agents."},
+  {l:"i",q:"What does a trace of an LLM call let you see?",o:["Only the final answer","Prompts, responses, tokens, latency and cost per step","The model's weights","Your AWS bill"],a:1,w:"Traces make every step visible — essential for debugging agents."},
   {l:"a",q:"When is a reasoning model NOT worth it?",o:["Planning a multi-step fix","Analysing a complex outage","Classifying a ticket into 8 categories","Debugging conflicting policies"],a:2,w:"Simple classification doesn't need thinking tokens — you'd pay more for no gain."},
   {l:"a",q:"The model misses a fact placed in the middle of a very long prompt. Best fix?",o:["Raise temperature","Send only the relevant chunks, key facts first or last","Use a bigger max-tokens","Switch region"],a:1,w:"Relevance beats volume. Retrieval + good ordering beats stuffing the window."},
   {l:"a",q:"Temperature 0 on the same prompt, run twice…",o:["Always gives identical output","Usually similar, but not guaranteed identical","Always errors","Is random"],a:1,w:"Low temperature reduces variation but determinism isn't guaranteed. Build tests that tolerate it."},

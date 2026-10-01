@@ -37,21 +37,6 @@ In File Explorer, double-click **`C:\AskIT\dxc-agentic-ai\SETUP.bat`**. It will:
 | Open `.env` in Notepad | Paste the keys the trainer shares → **Save** → close Notepad |
 | Environment check | Every line must say **[OK]** |
 
-## Step 3b — Langfuse keys (needed for Lab C, Session 1)
-The trainer shares your **team's** Langfuse keys (Team A / B / C / D). Add them to `.env`:
-
-1. Command Prompt: `cd /d C:\AskIT\dxc-agentic-ai` then `notepad .env`
-2. Fill in these 3 lines (no spaces, no quotes):
-```
-LANGFUSE_PUBLIC_KEY=pk-lf-...
-LANGFUSE_SECRET_KEY=sk-lf-...
-LANGFUSE_HOST=https://cloud.langfuse.com
-```
-3. **Save** → close Notepad.
-4. Check: `.venv\Scripts\activate` then `python tools\verify_env.py` → **Langfuse keys** must say **[OK]**.
-
-Keys are private. Never paste them in code, screenshots or GitHub.
-
 ## Step 4 — Open the project in VS Code
 1. VS Code → **File → Open Folder** → `C:\AskIT\dxc-agentic-ai`
 2. `Ctrl+Shift+P` → **Python: Select Interpreter** → choose the one with **.venv**
@@ -77,4 +62,3 @@ In Command Prompt: `cd /d C:\AskIT\dxc-agentic-ai` then **`START_DAY.bat 1`** (D
 | AWS console opens in the wrong region | Top-right region menu → **US East (N. Virginia) us-east-1** |
 | `.env` not visible in Explorer | It starts with a dot. Open it with `notepad .env` from `C:\AskIT\dxc-agentic-ai` |
 | `verify_env.py` not found | It is in `tools\`: `python tools\verify_env.py` |
-| Langfuse `[!!]` line | Do Step 3b, then run `python tools\verify_env.py` again |
