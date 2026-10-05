@@ -1,17 +1,17 @@
 {
   "session": "S03",
-  "section": "Welcome",
-  "section_idx": 0,
+  "section": "Lab 2A",
+  "section_idx": 2,
   "sections_total": 10,
-  "xp_total": 6,
-  "active_minutes": 3,
-  "quiz_answered": 0,
-  "quiz_correct": 0,
+  "xp_total": 33,
+  "active_minutes": 33,
+  "quiz_answered": 4,
+  "quiz_correct": 2,
   "labs_self_reported": {
     "lab2a": false,
     "lab2b": false,
     "lab2c": false
   },
   "participant": null,
-  "updated_at": "2026-10-05T03:55:38.352554+00:00"
+  "updated_at": "2026-10-05T05:35:42.928080+00:00"
 }
