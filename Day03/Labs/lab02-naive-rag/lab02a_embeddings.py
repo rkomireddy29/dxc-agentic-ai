@@ -31,48 +31,32 @@ EMBED_MODEL = "amazon.titan-embed-text-v2:0"
 
 def embed(client, text, dimensions=512):
     """Return the embedding of `text` as a list of floats."""
-    # TODO-1: Ask Titan to turn `text` into a vector of numbers.
-    # WHY:   Titan is a model on AWS. We send it text, it sends back 512 numbers
-    #        that capture the meaning. We never read the numbers; we only compare them.
-    # STEPS: (1) build the request as JSON with the text, the size and normalize=True
-    #            (normalize=True keeps every vector the same length, so scores are fair)
-    #        (2) call client.invoke_model with the model id and that body
-    #        (3) the reply body is a stream: read it, parse the JSON, take "embedding"
-    # SKELETON (fill the ___):
-    #   body = json.dumps({"inputText": ___, "dimensions": ___, "normalize": True})
-    #   response = client.invoke_model(modelId=___, body=body)
-    #   result = json.loads(response["body"].___())
-    #   return result["___"]
-    # My prediction: how many numbers will come back for one sentence? ____
-    raise NotImplementedError("TODO-1")
+    # TODO-1: Call Titan Text Embeddings v2 through Bedrock.
+    #   body = json.dumps({"inputText": text, "dimensions": dimensions, "normalize": True})
+    #   response = client.invoke_model(modelId=EMBED_MODEL, body=body)
+    #   result = json.loads(response["body"].read())
+    #   return result["embedding"]
+    body = json.dumps({"inputText": text, "dimensions": dimensions, "normalize": True})
+    response = client.invoke_model(modelId=EMBED_MODEL, body=body)
+    return json.loads(response["body"].read())["embedding"]
 
 
 def cosine(a, b):
     """Cosine similarity between two vectors: 1 = same meaning, ~0 = unrelated."""
-    # TODO-2: Measure how close two meanings are with one number.
-    # WHY:   Each vector is an arrow. Two arrows pointing the same way = same meaning
-    #        (score 1). At right angles = unrelated (score 0). Cosine similarity
-    #        is the angle between the arrows, ignoring how long they are.
-    # STEPS: multiply the two vectors element by element and add up (np.dot), then
-    #        divide by the length of each vector (np.linalg.norm). Return a float().
-    # SKELETON:  float( np.dot(a, b) / ( np.linalg.norm(___) * np.linalg.norm(___) ) )
-    # My prediction: score for ("locked out of account", "can't sign in") will be
-    #        close to ____ and for ("locked out", "printer jammed") close to ____
+    # TODO-2: dot(a, b) / (norm(a) * norm(b))   -> use np.dot and np.linalg.norm
+    #   Return a plain Python float.
+    a, b = np.asarray(a, dtype=float), np.asarray(b, dtype=float)
+    return float(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))
     raise NotImplementedError("TODO-2")
 
 
 def top_k(query_vec, items, k=3):
     """items = [{"id": ..., "vector": [...]}, ...]
     Return the k most similar items as [{"id": ..., "score": ...}], highest score first."""
-    # TODO-3: Rank the KB articles by how close they are to the ticket.
-    # WHY:   This is retrieval, the "R" in RAG: given a question, find the pieces
-    #        of knowledge nearest in meaning. Everything else in RAG builds on it.
-    # STEPS: (1) give every item a score with your cosine() function
-    #        (2) sort the scores, highest first
-    #        (3) keep only the first k and return them as {"id": ..., "score": ...}
-    # Hint:  sorted(list, key=lambda x: x["score"], reverse=___) and list[:k]
-    # My prediction: will the top match for "VPN keeps dropping" be a VPN article? ____
-    raise NotImplementedError("TODO-3")
+    # TODO-3: score every item with cosine(query_vec, item["vector"]),
+    #   sort by score (highest first) and return the first k as {"id", "score"} dicts.
+    scored = [{"id": it["id"], "score": cosine(query_vec, it["vector"])} for it in items]
+    return sorted(scored, key=lambda h: h["score"], reverse=True)[:k]
 
 
 PAIRS = [

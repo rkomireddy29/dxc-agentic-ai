@@ -1,0 +1,25 @@
+{
+  "session": "S03",
+  "lab": "lab2a",
+  "title": "Lab 2A",
+  "folder": "lab02-naive-rag",
+  "participant": {
+    "name": "Rajagopal Reddy Komireddy",
+    "github_user": "rkomireddy29",
+    "team": "D"
+  },
+  "submitted_at": "2026-10-05T06:56:17.185785+00:00",
+  "attempts": 2,
+  "passed": [
+    "test_challenge_1_embed",
+    "test_challenge_2_cosine",
+    "test_challenge_3_top_k"
+  ],
+  "failed": [],
+  "total": 3,
+  "stretch": null,
+  "evidence": {
+    "files": {},
+    "eval_runs": []
+  }
+}
