@@ -25,7 +25,85 @@ for _e in reversed(_envs):                      # farthest (course .env) first, 
         if _v:
             os.environ[_k] = _v
 load_dotenv()
-st.set_page_config(page_title="AskIT RAG Lab", page_icon="🔎", layout="wide")
+st.set_page_config(page_title="AskMyPDF", page_icon="🦉", layout="wide")
+
+st.markdown(
+    """
+    <style>
+        :root {
+            --saffron-900: #7a4b00;
+            --saffron-700: #c47c00;
+            --saffron-500: #e9a93b;
+            --saffron-100: #fff7e8;
+            --ink-900: #1f2933;
+            --ink-700: #3d4a57;
+            --line: #f0d8a4;
+            --white: #ffffff;
+        }
+        .stApp {
+            background: linear-gradient(180deg, #fffdf8 0%, #fffdf8 100%);
+            color: var(--ink-900);
+        }
+        .block-container {
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+        }
+        h1, h2, h3 {
+            color: var(--saffron-900);
+        }
+        .stButton > button {
+            border-radius: 12px;
+            border: 1px solid #f1c76d;
+            background: linear-gradient(180deg, #f8d27a 0%, #edb546 100%);
+            color: #352100;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        .stButton > button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 18px rgba(233, 169, 59, 0.22);
+        }
+        .stChatInput textarea, .stChatInput > div {
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            background: var(--white);
+        }
+        .sidebar .css-1d391kg {
+            background: var(--saffron-100);
+        }
+        .app-header {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            margin-bottom: 0.15rem;
+        }
+        .app-title {
+            margin: 0;
+            font-size: 2.4rem;
+            line-height: 1.2;
+            color: var(--saffron-900);
+        }
+        .app-tagline {
+            margin: 0 0 0.6rem 0;
+            font-size: 1rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            color: var(--saffron-700);
+            text-transform: uppercase;
+        }
+        .team-footer {
+            margin-top: 1.75rem;
+            padding-top: 0.9rem;
+            border-top: 1px solid var(--line);
+            text-align: center;
+            color: var(--ink-700);
+            font-size: 0.8rem;
+            letter-spacing: 0.04em;
+        }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
 BEDROCK_EMBED = "amazon.titan-embed-text-v2:0"
 OPENAI_EMBED = "text-embedding-3-small"
@@ -104,7 +182,8 @@ providers = [primary] if primary else []
 FALLBACKS = ORDER[1:]
 
 if not providers:
-    st.title("🔎 AskIT · RAG Lab")
+    st.markdown('<div class="app-header"><span style="font-size:2.2rem;">🦉</span><h1 class="app-title">AskMyPDF</h1></div>', unsafe_allow_html=True)
+    st.markdown('<p class="app-tagline">Upload. Ask. Done.</p>', unsafe_allow_html=True)
     st.warning("No provider available. Check the course .env (AWS keys + BEDROCK_SMALL_MODEL_ID, or the AZURE_OPENAI_* values), or paste an OpenAI key in the sidebar.")
     st.stop()
 
@@ -408,9 +487,10 @@ def retrieve(question, k):
 
 # ---------------------------------------------------------------- Step 6: Generate (with fallback)
 SYSTEM_PROMPT = (
-    "You are AskIT, the IT helpdesk assistant of Orbit Corp. Answer ONLY from the provided context. "
-    "Cite sources inline like [filename #chunk]. Keep answers short. "
-    "If the answer is not in the context, say: \"I couldn't find that in the AskIT knowledge base. I will route this to a human agent.\""
+    "You are AskMyPDF, a calm senior engineer with a dry sense of humor and a practical mindset. "
+    "Answer only from the supplied context. Keep it brief, useful, and precise. "
+    "Cite sources inline like [filename #chunk]. If the answer is not in the context, say: \"I couldn't find that in the document. I’d hand this to a human expert.\" "
+    "Prefer crisp explanations, a little wit, and zero fluff."
 )
 
 
@@ -448,8 +528,9 @@ def generate(question, hits):
 
 
 # ---------------------------------------------------------------- UI: Knowledge base
-st.title("🔎 AskIT · RAG Lab")
-st.caption("Load KB → Chunk → Embed → Store → Retrieve → Generate   ·   Orbit Corp IT helpdesk")
+st.markdown('<div class="app-header"><span style="font-size:2.5rem;">🦉</span><h1 class="app-title">AskMyPDF</h1></div>', unsafe_allow_html=True)
+st.markdown('<p class="app-tagline">Upload. Ask. Done.</p>', unsafe_allow_html=True)
+st.caption("Knowledge base → retrieval → answer   ·   calm engineering, very little drama")
 
 # ---------------------------------------------------------------- UI: Architecture diagram (follows the sidebar settings)
 with st.expander("🏗️ Architecture: how this app works (follows your sidebar settings)"):
@@ -572,7 +653,7 @@ for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-typed = st.chat_input("Ask AskIT a question")
+typed = st.chat_input("Ask AskMyPDF a question")
 question = st.session_state.pop("pending_q", None) or typed
 if question:
     st.session_state.messages.append({"role": "user", "content": question})
@@ -595,3 +676,5 @@ if question:
             reply = f"⚠️ {e}"
             st.error(reply)
     st.session_state.messages.append({"role": "assistant", "content": reply})
+
+st.markdown('<div class="team-footer">Rajagopal, Team 2</div>', unsafe_allow_html=True)
