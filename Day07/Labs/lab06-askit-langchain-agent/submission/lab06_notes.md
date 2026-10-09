@@ -1,12 +1,12 @@
 # Lab 6 notes
 
-Name: <fill your name>
+Name: Rajagopal
 
 ## Lab 6A: the LangChain agent
-Which tools did the agent use for your question, in order? <fill>
+Which tools did the agent use for your question, in order?
 
 ## Lab 6B: middleware
-What did the model see instead of the email address? <fill>
+What did the model see instead of the email address?
 
 ## Lab 6C: streaming
-Which line appeared FIRST when you streamed the answer? <fill>
+Which line appeared FIRST when you streamed the answer?

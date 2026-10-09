@@ -65,13 +65,13 @@ def build_agent(model, tools, middleware=None):
 
     create_agent(...) builds the whole loop for you: think, act, observe, repeat.
     Replace the line  'return None'  with ONE line that calls create_agent with:
-        model=model
-        tools=tools
-        system_prompt=SYSTEM_PROMPT
-        middleware=middleware or []
+    model=model
+    tools=tools
+    system_prompt=SYSTEM_PROMPT
+    middleware=middleware or []
     Use exactly these names. Then run:  python check.py 6a
     """
-    return None  # TODO-1: replace this line with: return create_agent(...)
+    return create_agent(model=model, tools=tools, system_prompt=SYSTEM_PROMPT, middleware=middleware or [])
 
 
 def ask(agent, question):
@@ -107,7 +107,7 @@ def over_budget(model_calls, max_calls):
     Ask: has model_calls reached max_calls?  Use >=  (greater than or equal).
     Replace the line  'return False'  with ONE comparison. Then run:  python check.py 6b
     """
-    return False  # TODO-2: replace this line with one comparison
+    return create_agent(model=model, tools=tools, system_prompt=SYSTEM_PROMPT, middleware=middleware or []) 
 
 
 @before_model
