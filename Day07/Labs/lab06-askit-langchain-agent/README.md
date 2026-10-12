@@ -3,7 +3,10 @@
 **Session 6 · LangChain, Middleware and Streaming**
 
 You will do three small parts. Each part has **one line to write** and two quick experiments. Total time: about 40 minutes.
-
+Write a Python function triage(ticket) in triage.py that prioritizes IT support tickets.
+ticket is a dict with title, description, affected_users.
+Return a dict with priority, queue and sla_hours.
+Save it as vibe/triage.py
 - **6A** (about 10 min): build the agent. 1 line.
 - **6B** (about 15 min): add a safety limit. 1 line.
 - **6C** (about 15 min): watch the agent work, step by step. 1 line.

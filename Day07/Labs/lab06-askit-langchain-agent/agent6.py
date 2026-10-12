@@ -32,7 +32,7 @@ Rules:
 2. For a question about a ticket, call get_ticket.
 3. Use update_ticket or reset_password ONLY when the user clearly asks for that action.
 4. If a tool returns an error, tell the user in one sentence.
-5. When you have the answer, reply in 2-3 short sentences."""
+5. When you have the answer, reply in one short sentences."""
 
 
 # =============================================================================================
@@ -107,7 +107,7 @@ def over_budget(model_calls, max_calls):
     Ask: has model_calls reached max_calls?  Use >=  (greater than or equal).
     Replace the line  'return False'  with ONE comparison. Then run:  python check.py 6b
     """
-    return create_agent(model=model, tools=tools, system_prompt=SYSTEM_PROMPT, middleware=middleware or []) 
+    return model_calls >= max_calls 
 
 
 @before_model
