@@ -11,7 +11,9 @@ Three places the same run can be seen (tab 1 shows all three):
                      switched on "model invocation logging". No code in this file: it is AWS's side.
 """
 import json
+import logging
 import os
+import re
 import time
 import uuid
 from contextlib import contextmanager
@@ -20,11 +22,39 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 STORE = HERE / "submission" / "traces.jsonl"
+logger = logging.getLogger(__name__)
+
+_SENSITIVE_PATTERNS = (
+    (re.compile(r"\bEMP-\d+\b", re.IGNORECASE), "[REDACTED_EMPLOYEE_ID]"),
+    (re.compile(r"\bTKT-\d+\b", re.IGNORECASE), "[REDACTED_TICKET_ID]"),
+    (re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.IGNORECASE), "[REDACTED_EMAIL]"),
+    (re.compile(r"\bBearer\s+\S+", re.IGNORECASE), "Bearer [REDACTED]"),
+    (re.compile(r"\b(?:sk|pk)-lf-[\w-]+\b", re.IGNORECASE), "[REDACTED_LANGFUSE_KEY]"),
+    (re.compile(r"\b(?:sk|pk)-[A-Za-z0-9_-]{20,}\b"), "[REDACTED_API_KEY]"),
+    (re.compile(r"\blsv2_[A-Za-z0-9_-]+\b"), "[REDACTED_API_KEY]"),
+    (re.compile(r"\b(?:password|passcode|api[_-]?key|secret)\s*[:=]\s*\S+", re.IGNORECASE), "[REDACTED_CREDENTIAL]"),
+)
 
 
 def clip(x, n=700):
     t = x if isinstance(x, str) else json.dumps(x, default=str, ensure_ascii=False)
     return t if len(t) <= n else t[:n] + f"... [{len(t) - n} more characters]"
+
+
+def _mask_langfuse_data(value):
+    if isinstance(value, str):
+        for pattern, replacement in _SENSITIVE_PATTERNS:
+            value = pattern.sub(replacement, value)
+        return value
+    if isinstance(value, dict):
+        return {key: _mask_langfuse_data(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_mask_langfuse_data(item) for item in value]
+    return value
+
+
+def _warn_langfuse(action, error):
+    logger.warning("Langfuse %s failed (%s); application execution will continue", action, type(error).__name__)
 
 
 # ------------------------------------------------------------------------------------------------ Langfuse (optional)
@@ -36,7 +66,8 @@ def langfuse_client():
         from langfuse import Langfuse
         host = os.getenv("LANGFUSE_HOST") or os.getenv("LANGFUSE_BASE_URL") or "https://cloud.langfuse.com"
         return Langfuse(public_key=os.environ["LANGFUSE_PUBLIC_KEY"], secret_key=os.environ["LANGFUSE_SECRET_KEY"], host=host)
-    except Exception:                                                   # noqa: BLE001
+    except Exception as e:                                               # noqa: BLE001
+        _warn_langfuse("client initialization", e)
         return None
 
 
@@ -47,6 +78,7 @@ def langfuse_check(lf):
     try:
         return (True, "Connected to Langfuse. New runs are sent live.") if lf.auth_check() else (False, "Langfuse said the keys are wrong.")
     except Exception as e:                                              # noqa: BLE001
+        _warn_langfuse("connection check", e)
         return False, f"Could not reach Langfuse: {type(e).__name__}. Check the host and your network."
 
 
@@ -70,25 +102,37 @@ class Tracer:
     def run(self, question):
         self.trace["question"] = question
         self._t0 = time.perf_counter()
-        cm = None
+        cm = root = None
         try:
             if self.lf:
-                cm = self.lf.start_as_current_observation(name=self.trace["name"], as_type="agent", input=question,
-                                                           metadata={"model": self.trace["model"], **self.trace["tags"]})
-                self._root = cm.__enter__()
-                self.trace["langfuse_id"] = getattr(self._root, "trace_id", "") or ""
-        except Exception:                                               # noqa: BLE001
-            cm = None
+                cm = self.lf.start_as_current_observation(
+                    name=self.trace["name"],
+                    as_type="agent",
+                    input=_mask_langfuse_data(question),
+                    metadata=_mask_langfuse_data({
+                        "model": self.trace["model"],
+                        "provider": self.trace["provider"],
+                        "price_key": self.trace["price_key"],
+                        **self.trace["tags"],
+                    }),
+                )
+                root = cm.__enter__()
+                self.trace["langfuse_id"] = getattr(root, "trace_id", "") or ""
+        except Exception as e:                                          # noqa: BLE001
+            _warn_langfuse("agent observation start", e)
+            cm = root = None
+        run_error = None
         try:
             yield self
         except Exception as e:                                          # noqa: BLE001
+            run_error = e
             self.trace["status"] = "error"
             self.trace["error"] = f"{type(e).__name__}: {e}"
             raise
         finally:
-            self._finish(cm)
+            self._finish(cm, root, run_error)
 
-    def _finish(self, cm):
+    def _finish(self, cm, root, error):
         t = self.trace
         t["ms"] = round((time.perf_counter() - self._t0) * 1000)
         t["tokens_in"] = sum(s.get("tokens_in", 0) for s in t["spans"])
@@ -96,14 +140,28 @@ class Tracer:
         t["cost_usd"] = round(sum(s.get("cost_usd", 0) for s in t["spans"]), 8)
         t["llm_calls"] = sum(1 for s in t["spans"] if s["kind"] == "llm")
         t["tool_calls"] = sum(1 for s in t["spans"] if s["kind"] == "tool")
-        if cm is not None:
+        if cm is not None and root is not None:
             try:
-                self._root.update(output=t.get("answer", ""), level="ERROR" if t["status"] == "error" else "DEFAULT")
-                cm.__exit__(None, None, None)
+                root.update(
+                    output=_mask_langfuse_data(t.get("answer", "")),
+                    level="ERROR" if t["status"] == "error" else "DEFAULT",
+                    **({"status_message": _mask_langfuse_data(t["error"])} if t.get("error") else {}),
+                )
+            except Exception as e:                                      # noqa: BLE001
+                _warn_langfuse("agent observation update", e)
+            try:
+                cm.__exit__(type(error) if error else None, error, error.__traceback__ if error else None)
+            except Exception as e:                                      # noqa: BLE001
+                _warn_langfuse("agent observation end", e)
+            try:
                 self.lf.flush()
-                t["langfuse_url"] = self.lf.get_trace_url(trace_id=t["langfuse_id"]) or ""
-            except Exception:                                           # noqa: BLE001
-                pass
+            except Exception as e:                                      # noqa: BLE001
+                _warn_langfuse("flush", e)
+            if t.get("langfuse_id"):
+                try:
+                    t["langfuse_url"] = self.lf.get_trace_url(trace_id=t["langfuse_id"]) or ""
+                except Exception as e:                                  # noqa: BLE001
+                    _warn_langfuse("trace URL lookup", e)
 
     # ---- one step
     @contextmanager
@@ -116,29 +174,48 @@ class Tracer:
         cm = obs = None
         try:
             if self.lf:
-                cm = self.lf.start_as_current_observation(name=name, as_type="generation" if kind == "llm" else ("retriever" if name == "search_kb" else "tool"), input=s["input"],
-                                                           model=self.trace["model"] if kind == "llm" else None)
+                is_generation = kind == "llm"
+                cm = self.lf.start_as_current_observation(
+                    name="askit-model-call" if is_generation else name,
+                    as_type="generation" if is_generation else ("retriever" if name == "search_kb" else "tool"),
+                    input=_mask_langfuse_data(input) if input is not None else "",
+                    model=self.trace["model"] if is_generation else None,
+                    metadata=_mask_langfuse_data({
+                        "provider": self.trace["provider"],
+                        "step": s["id"],
+                    }) if is_generation else None,
+                )
                 obs = cm.__enter__()
-        except Exception:                                               # noqa: BLE001
+        except Exception as e:                                          # noqa: BLE001
+            _warn_langfuse("step observation start", e)
             cm = obs = None
+        span_error = None
         try:
             yield s
         except Exception as e:                                          # noqa: BLE001
+            span_error = e
             s["error"] = f"{type(e).__name__}: {e}"
             raise
         finally:
             s["ms"] = round((time.perf_counter() - t0) * 1000)
-            s["output"] = clip(s["output"]) if s["output"] != "" else ""
+            output = s["output"]
+            s["output"] = clip(output) if output != "" else ""
             if cm is not None:
+                kw = {"output": _mask_langfuse_data(output), "level": "ERROR" if s["error"] else "DEFAULT"}
+                if s["error"]:
+                    kw["status_message"] = _mask_langfuse_data(s["error"])
+                if kind == "llm":
+                    kw["usage_details"] = {"input": s["tokens_in"], "output": s["tokens_out"]}
+                    kw["cost_details"] = {"total": s["cost_usd"]}
                 try:
-                    kw = {"output": s["output"], "level": "ERROR" if s["error"] else "DEFAULT"}
-                    if kind == "llm":
-                        kw["usage_details"] = {"input": s["tokens_in"], "output": s["tokens_out"]}
-                        kw["cost_details"] = {"total": s["cost_usd"]}
                     obs.update(**kw)
-                    cm.__exit__(None, None, None)
-                except Exception:                                       # noqa: BLE001
-                    pass
+                except Exception as e:                                  # noqa: BLE001
+                    _warn_langfuse("step observation update", e)
+                try:
+                    cm.__exit__(type(span_error) if span_error else None, span_error,
+                                span_error.__traceback__ if span_error else None)
+                except Exception as e:                                  # noqa: BLE001
+                    _warn_langfuse("step observation end", e)
 
 
 # ------------------------------------------------------------------------------------------------ saving

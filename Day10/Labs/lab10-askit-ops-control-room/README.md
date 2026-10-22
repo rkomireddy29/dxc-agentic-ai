@@ -51,6 +51,8 @@ Keep the terminal open. In the sidebar (left) leave **1 · Model** on **AWS Bedr
 3. Click **Test the connection**. You should see "Connected to Langfuse".
 4. Run a question in tab 1 **again**. Only runs you do after connecting are sent. Then click **Open this trace in Langfuse**.
 
+Each Langfuse trace represents one AskIT run, with a generation for every model call and typed tool/retriever observations. Model/provider, token usage and cost are recorded; employee IDs, ticket IDs, email addresses and common API-key patterns are redacted before sending. Redaction is pattern-based, not a substitute for reviewing data: do not send real company or personal data. The local `submission/traces.jsonl` file is not redacted.
+
 **CloudWatch vs Langfuse (remember this):** CloudWatch sees the **model calls only**. Langfuse sees the **whole agent run** (model calls, tool calls, order, answer).
 
 The test fails? Skip this. Everything in the lab still works; you only miss the Langfuse view in tab 1.
